@@ -16,12 +16,12 @@ param(
     [System.Security.SecureString]$BiosPassword
 )
 
-# Convertir SecureString a puntero en memoria de ejecución activa
+# SecureString -> puntero en memoria de ejecución activa
 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
 $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
 
 try {
-    # 1. Definición de la Baseline de Seguridad (Sin credenciales hardcodeadas)
+    # Baseline de Seguridad
     # NOTA: AbsolutePersistenceModule se excluye de la baseline global para evitar bloqueos no deseados.
     $BiosSettings = @{
         "SecurityChip"              = "Enable"        # dTPM 2.0
@@ -33,7 +33,7 @@ try {
         "VirtualizationTechnology"  = "Enable"        # Intel VT-x / AMD-V
     }
 
-    # 2. Aplicación y validación de parámetros estándar mediante proveedor CIM/WMI
+    # Parámetros estándar mediante proveedor CIM/WMI
     foreach ($Setting in $BiosSettings.GetEnumerator()) {
         $Result = (Get-CimInstance -Namespace root\wmi -ClassName Lenovo_SetBiosSetting).SetBiosSetting("$($Setting.Key),$($Setting.Value)")
         if ($Result.return -ne "Success") {
@@ -41,14 +41,14 @@ try {
         }
     }
 
-    # 3. Inyección aislada de la contraseña de Supervisor con validación
+    # Inyección aislada de la contraseña de Supervisor con validación
     # Estructura del método Lenovo: "SupervisorPassword,Set,<PASSWORD>"
     $PassResult = (Get-CimInstance -Namespace root\wmi -ClassName Lenovo_SetBiosSetting).SetBiosSetting("SupervisorPassword,Set,$PlainPassword")
     if ($PassResult.return -ne "Success") {
         throw "No se pudo establecer la contraseña de Supervisor en la BIOS. Retorno WMI: $($PassResult.return)"
     }
 
-    # 4. Confirmación y guardado permanente en el microcontrolador (NVRAM)
+    # Confirmación y guardado permanente en el microcontrolador (NVRAM)
     $SaveResult = (Get-CimInstance -Namespace root\wmi -ClassName Lenovo_SaveBiosSettings).SaveBiosSettings()
     if ($SaveResult.return -ne "Success") {
         throw "Falla al persistir los cambios en la NVRAM/microcontrolador. Retorno WMI: $($SaveResult.return)"
@@ -59,7 +59,7 @@ try {
 } catch {
     Write-Error "Error crítico durante la configuración de BIOS vía CIM/WMI: $_"
 } finally {
-    # Purga obligatoria de credenciales en memoria (Hardening de Ejecución)
+    # Purga obligatoria de credenciales en memoria
     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     $PlainPassword = $null
     [System.GC]::Collect()

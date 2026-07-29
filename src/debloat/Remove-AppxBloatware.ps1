@@ -1,8 +1,6 @@
-# ==============================================================================
-# FASE 5.1: LIMPIEZA NATIVA DE PAQUETES APPX / BLOATWARE (REFACTORIZADO)
-# ==============================================================================
+# LIMPIEZA NATIVA DE PAQUETES APPX / BLOATWARE
 
-# 1. Definición explícita de nombres de paquetes/patrones de bloatware
+# Nombres de paquetes/patrones de bloatware
 $BloatwareList = @(
     "Microsoft.ZuneVideo",
     "Microsoft.ZuneMusic",
@@ -14,10 +12,10 @@ $BloatwareList = @(
     "Microsoft.XboxApp"
 )
 
-# Compilación de la lista a un patrón Regex unificado (Ejemplo: 'ZuneVideo|ZuneMusic|GetHelp')
+# Compilación de la lista -> patrón Regex unificado
 $RegexPattern = ($BloatwareList -join '|')
 
-# 2. Desaprovisionar de la imagen base (Aplica a todo nuevo perfil de usuario)
+# Desaprovisionamiento de la imagen base
 # Nota: Se evalúa 'DisplayName' y 'PackageName' para prevenir fallos por valores nulos en WinPE
 $ProvisionedApps = Get-AppxProvisionedPackage -Online | Where-Object {
     $_.DisplayName -match $RegexPattern -or $_.PackageName -match $RegexPattern
@@ -30,7 +28,7 @@ foreach ($App in $ProvisionedApps) {
     Remove-AppxProvisionedPackage -Online -PackageName $App.PackageName -ErrorAction SilentlyContinue | Out-Null
 }
 
-# 3. Remover AppX del perfil actual y perfiles existentes
+# Remoción de AppX del perfil actual y perfiles existentes
 $InstalledApps = Get-AppxPackage -AllUsers | Where-Object {
     $_.Name -match $RegexPattern
 }
@@ -38,6 +36,6 @@ $InstalledApps = Get-AppxPackage -AllUsers | Where-Object {
 foreach ($App in $InstalledApps) {
     Write-Host "Removiendo AppX instalado en perfiles: $($App.Name)" -ForegroundColor Yellow
     
-    # Se remueve el paquete para todos los usuarios registrados en el endpoint
+    # Remoción de paquete para todos los usuarios registrados en el endpoint
     Remove-AppxPackage -Package $App.PackageFullName -AllUsers -ErrorAction SilentlyContinue | Out-Null
 }

@@ -8,13 +8,13 @@ if (-not (Test-Path $ConfigFile)) {
     throw "No se encontró el archivo de configuración cifrado en: $ConfigFile"
 }
 
-# 1. Importación del módulo oficial homologado de Lenovo
+# Importación del módulo oficial homologado de Lenovo
 Import-Module ThinkBios-Config -ErrorAction Stop
 
-# 2. Aplicación de la Baseline y Contraseña encriptada desde archivo empaquetado
+# Baseline y Contraseña encriptada desde archivo empaquetado
 Set-ThinkBiosSetConfig -ConfigFile $ConfigFile
 
-# 3. Validación del estado de ejecución
+# Validación del estado de ejecución
 if ($?) {
     Write-Host "Baseline de BIOS y credencial de Supervisor aplicadas exitosamente mediante ThinkBios-Config." -ForegroundColor Green
 } else {

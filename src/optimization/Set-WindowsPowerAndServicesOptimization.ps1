@@ -1,8 +1,6 @@
-# ==============================================================================
-# FASE 5.2: OPTIMIZACIÓN DE ENERGÍA Y SERVICIOS (REFACTORIZADO)
-# ==============================================================================
+# OPTIMIZACIÓN DE ENERGÍA Y SERVICIOS (REFACTORIZADO)
 
-# 1. Detección dinámica del factor de forma de hardware vía CIM/WMI
+# Detección dinámica del factor de forma de hardware vía CIM/WMI
 # Tipos de Chasis Laptop: 8 (Portable), 9 (Laptop), 10 (Notebook), 14 (SubNotebook), 30 (Tablet), 31 (Convertible)
 $ChassisTypes = (Get-CimInstance -ClassName Win32_SystemEnclosure).ChassisTypes
 
@@ -18,10 +16,10 @@ if ($IsLaptop) {
     powercfg -h off
 }
 
-# 2. Configuración de tiempo de espera de cierre de servicios (Estándar Enterprise: 20000 ms / 20 seg)
+# Configuración de tiempo de espera de cierre de servicios (Estándar Enterprise: 20000 ms / 20 seg)
 # Garantiza el cierre ordenado y el envío de telemetría final de agentes EDR/Antivirus, bases de datos locales y suites CAD/BIM
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "WaitToKillServiceTimeout" -Value "20000" -Type String -Force
 
-# 3. Preservación del Archivo de Paginación para análisis Forense / Volcados de Memoria (Dumps)
+# Preservación del Archivo de Paginación / Volcados de Memoria (Dumps)
 # Se asegura que ClearPageFileAtShutdown = 0 para acelerar el apagado y evitar sobreescritura previa al análisis de crash dumps
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "ClearPageFileAtShutdown" -Value 0 -Type Dword -Force

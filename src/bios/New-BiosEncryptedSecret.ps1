@@ -8,7 +8,7 @@ param(
 )
 
 try {
-    # Convierte el SecureString a un hash cifrado por DPAPI (usuario/equipo actual)
+    # SecureString -> hash cifrado por DPAPI
     $EncryptedSecret = $BiosPassword | ConvertFrom-SecureString
     Set-Content -Path $OutputPath -Value $EncryptedSecret -Force
     Write-Host "Secreto cifrado generado exitosamente en: $OutputPath" -ForegroundColor Green
