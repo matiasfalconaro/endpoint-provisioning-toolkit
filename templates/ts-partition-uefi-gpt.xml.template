@@ -1,0 +1,28 @@
+<!-- Fragmento homologado de Task Sequence (Control.xml) para Particionado UEFI / GPT -->
+<step type="BDD_PartitionDisk" name="Format and Partition Disk (UEFI Dedicated)">
+  <defaultdisk>0</defaultdisk>
+  <disktype>GPT</disktype>
+  <partitions>
+    <!-- Partición 1: Sistema EFI (FAT32) -->
+    <partition index="1">
+      <type>EFI</type>
+      <size>260</size>
+      <fs>FAT32</fs>
+      <label>System</label>
+      <bootable>true</bootable>
+    </partition>
+    <!-- Partición 2: Microsoft Reserved (MSR) -->
+    <partition index="2">
+      <type>MSR</type>
+      <size>16</size>
+    </partition>
+    <!-- Partición 3: Sistema Operativo (Uso del 100% del espacio dinámico restante) -->
+    <partition index="3">
+      <type>PRIMARY</type>
+      <size>100</size>
+      <percent>true</percent>
+      <fs>NTFS</fs>
+      <label>Windows</label>
+    </partition>
+  </partitions>
+</step>

@@ -1,0 +1,10 @@
+select disk 0
+clean
+convert gpt
+create partition efi size=260
+format quick fs=fat32 label="System"
+create partition msr size=16
+rem Asigna dinámicamente el 100% del espacio restante independientemente del tamaño del disco
+create partition primary
+format quick fs=ntfs label="Windows"
+exit

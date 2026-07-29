@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+            
+            <!-- Configuración de AutoLogon Temporal para Aprovisionamiento -->
+            <AutoLogon>
+                <Password>
+                    <!-- Contraseña encriptada por Windows SIM / Sysprep -->
+                    <Value>U2VjdXJlUGFzc3dvcmQxMjMhUGFzc3dvcmQ=</Value>
+                    <PlainText>false</PlainText>
+                </Password>
+                <Enabled>true</Enabled>
+                <LogonCount>1</LogonCount>
+                <Username>AdminLocal</Username>
+            </AutoLogon>
+
+            <!-- Creación de Cuenta Administrativa Local (Gestionada por MS LAPS post-join) -->
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                        <Password>
+                            <Value>U2VjdXJlUGFzc3dvcmQxMjMhUGFzc3dvcmQ=</Value>
+                            <PlainText>false</PlainText>
+                        </Password>
+                        <Description>Cuenta Administrador Local de Despliegue</Description>
+                        <DisplayName>AdminLocal</DisplayName>
+                        <Group>Administrators</Group>
+                        <Name>AdminLocal</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+            </UserAccounts>
+
+            <!-- PURGA AUTOMÁTICA DE ATRIBUTOS Y CREDENCIALES TRAS EL PRIMER LOGON -->
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                    <Order>1</Order>
+                    <CommandLine>cmd.exe /c del /f /q C:\Windows\Panther\unattend.xml</CommandLine>
+                    <Description>Eliminacion segura de unattend.xml para evitar exfiltracion de credenciales</Description>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                    <Order>2</Order>
+                    <CommandLine>cmd.exe /c del /f /q C:\Windows\System32\Sysprep\unattend.xml</CommandLine>
+                    <Description>Eliminacion de copia residual de Sysprep</Description>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+
+        </component>
+    </settings>
+</unattend>
