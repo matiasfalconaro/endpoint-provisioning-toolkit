@@ -33,4 +33,4 @@ try {
 }
 catch {
     Write-Error "Error crítico al aplicar la configuración con ThinkBios-Config: $_"
-
+}
