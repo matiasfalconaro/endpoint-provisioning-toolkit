@@ -1,6 +1,20 @@
-# LIMPIEZA NATIVA DE PAQUETES APPX / BLOATWARE
+<#
+.SYNOPSIS
+    Depuración Server-Side de paquetes AppX provisionados (Image Servicing Offline).
+.DESCRIPTION
+    Remueve paquetes no corporativos directamente de la imagen de Windows montada/aplicada 
+    durante la fase WinPE de la Task Sequence.
+.PARAMETER TargetDrive
+    Unidad o ruta del volumen del sistema operativo offline.
+#>
 
-# Nombres de paquetes/patrones de bloatware
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$TargetDrive = "C:\"
+)
+
+# Patrón de bloatware definido por la Baseline
 $BloatwareList = @(
     "Microsoft.ZuneVideo",
     "Microsoft.ZuneMusic",
@@ -12,30 +26,20 @@ $BloatwareList = @(
     "Microsoft.XboxApp"
 )
 
-# Compilación de la lista -> patrón Regex unificado
 $RegexPattern = ($BloatwareList -join '|')
 
-# Desaprovisionamiento de la imagen base
-# Nota: Se evalúa 'DisplayName' y 'PackageName' para prevenir fallos por valores nulos en WinPE
-$ProvisionedApps = Get-AppxProvisionedPackage -Online | Where-Object {
+Write-Host "Iniciando depuración offline de AppX en $TargetDrive..." -ForegroundColor Cyan
+
+# Obtención y depuración OFFLINE sobre la imagen montada/aplicada (No -Online)
+$ProvisionedApps = Get-AppxProvisionedPackage -Path $TargetDrive | Where-Object {
     $_.DisplayName -match $RegexPattern -or $_.PackageName -match $RegexPattern
 }
 
 foreach ($App in $ProvisionedApps) {
     $AppName = if ($App.DisplayName) { $App.DisplayName } else { $App.PackageName }
-    Write-Host "Removiendo paquete provisionado de la imagen base: $AppName" -ForegroundColor Yellow
+    Write-Host "Removiendo paquete provisionado de la imagen base offline: $AppName" -ForegroundColor Yellow
     
-    Remove-AppxProvisionedPackage -Online -PackageName $App.PackageName -ErrorAction SilentlyContinue | Out-Null
+    Remove-AppxProvisionedPackage -Path $TargetDrive -PackageName $App.PackageName -ErrorAction SilentlyContinue | Out-Null
 }
 
-# Remoción de AppX del perfil actual y perfiles existentes
-$InstalledApps = Get-AppxPackage -AllUsers | Where-Object {
-    $_.Name -match $RegexPattern
-}
-
-foreach ($App in $InstalledApps) {
-    Write-Host "Removiendo AppX instalado en perfiles: $($App.Name)" -ForegroundColor Yellow
-    
-    # Remoción de paquete para todos los usuarios registrados en el endpoint
-    Remove-AppxPackage -Package $App.PackageFullName -AllUsers -ErrorAction SilentlyContinue | Out-Null
-}
+Write-Host "Depuración Offline de AppX completada en la imagen base." -ForegroundColor Green

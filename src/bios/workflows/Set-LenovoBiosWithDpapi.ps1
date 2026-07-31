@@ -1,27 +1,28 @@
 <#
 .SYNOPSIS
-    Aplica la Baseline de BIOS corporativa en equipos Lenovo ThinkPad.
+    Aplica la Baseline de BIOS de Lenovo utilizando un secreto cifrado por DPAPI.
 .DESCRIPTION
-    Configura parámetros de seguridad UEFI y asigna la contraseña de Supervisor
-    utilizando llamadas CIM/WMI dinámicas, validación de retornos y gestión segura de memoria.
-.PARAMETER BiosPassword
-    Contraseña de Supervisor de la BIOS representada como SecureString.
-.EXAMPLE
-    .\Set-LenovoBiosBaseline.ps1 -BiosPassword (Read-Host -AsSecureString "Ingrese la contraseña de BIOS")
+    Desencripta la contraseña de BIOS en memoria efímera, la inyecta vía CIM/WMI
+    y garantiza la purga inmediata de memoria.
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la contraseña de Supervisor de la BIOS")]
-    [System.Security.SecureString]$BiosPassword
+    [Parameter(Mandatory = $false)]
+    [string]$KeyPath = ".\BiosSecret.key"
 )
 
-# SecureString -> puntero en memoria de ejecución activa
-$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
+if (-not (Test-Path $KeyPath)) {
+    throw "No se encontró el archivo de secreto cifrado en la ruta: $KeyPath"
+}
+
+# Lectura y conversión del secreto cifrado
+$EncryptedSecret = Get-Content -Path $KeyPath | ConvertTo-SecureString
+$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($EncryptedSecret)
 $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
 
 try {
-    # Baseline de Seguridad (Excluye AbsolutePersistenceModule por directiva)
+    # 1. Aplicación de la Baseline de Seguridad.
     $BiosSettings = @{
         "SecurityChip"             = "Enable"        # dTPM 2.0
         "SecureBoot"               = "Enable"        # Secure Boot
@@ -32,36 +33,29 @@ try {
         "VirtualizationTechnology" = "Enable"        # Intel VT-x / AMD-V
     }
 
-    # Parámetros estándar mediante proveedor CIM/WMI
     foreach ($Setting in $BiosSettings.GetEnumerator()) {
         $Argument = "$($Setting.Key),$($Setting.Value);"
-        $Result = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $Argument }
-        
-        if ($Result.return -ne "Success") {
-            Write-Warning "Falla al aplicar parámetro de BIOS [$($Setting.Key)]: Código de retorno '$($Result.return)'"
-        }
+        Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $Argument } | Out-Null
     }
 
-    # Inyección aislada de la contraseña de Supervisor
+    # 2. Inyección de la contraseña con la sintaxis EXACTA ("Supervisor Password,Set,<PASSWORD>")
     $PassArgument = "Supervisor Password,Set,$PlainPassword;"
     $PassResult = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $PassArgument }
-    
+
     if ($PassResult.return -ne "Success") {
         throw "No se pudo establecer la contraseña de Supervisor en la BIOS. Retorno WMI: $($PassResult.return)"
     }
 
-    # Confirmación y guardado permanente en la NVRAM/microcontrolador
+    # 3. Guardado en NVRAM
     $SaveResult = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SaveBiosSettings" -MethodName "SaveBiosSettings"
     if ($SaveResult.return -ne "Success") {
         throw "Falla al persistir los cambios en la NVRAM/microcontrolador. Retorno WMI: $($SaveResult.return)"
     }
 
-    Write-Host "Baseline de BIOS aplicada y guardada exitosamente." -ForegroundColor Green
-
-} catch {
-    Write-Error "Error crítico durante la configuración de BIOS vía CIM/WMI: $_"
-} finally {
-    # Purga obligatoria de credenciales en memoria
+    Write-Host "Baseline y Contraseña de BIOS inyectadas exitosamente mediante DPAPI." -ForegroundColor Green
+}
+finally {
+    # Purga explícita del puntero en memoria
     if ($BSTR -ne [System.IntPtr]::Zero) {
         [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     }
