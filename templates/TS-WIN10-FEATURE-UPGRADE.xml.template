@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Task Sequence Template: In-Place Feature Upgrade / OS Servicing
+  Repositorio: endpoint-provisioning-toolkit
+  Ruta: templates/TS-WIN10-FEATURE-UPGRADE.xml.template
+-->
+<sequence version="3.00" name="TS-WIN10-FEATURE-UPGRADE" description="Orquestación desatendida de Upgrade de Versión de Windows 10">
+  
+  <!-- FASE 1: PRE-CHECK Y AUDITORÍA DE HARDWARE -->
+  <group name="1. Pre-Upgrade Assessment" disable="false">
+    <step type="BDD_RunPowerShellScript" name="Auditoría de Salud de Hardware" disable="false" continueOnError="false">
+      <defaultVarList>
+        <variable name="ScriptName" property="ScriptName">%SCRIPTROOT%\src\core\Invoke-DeploymentTask.ps1</variable>
+        <variable name="Parameters" property="Parameters">-TaskName "PreUpgrade-HealthCheck" -ScriptBlock { %SCRIPTROOT%\src\maintenance\Get-HardwareHealthStatus.ps1 }</variable>
+      </defaultVarList>
+    </step>
+  </group>
+
+  <!-- FASE 2: EJECUCIÓN DEL UPGRADE DEL OS (SERVICING) -->
+  <group name="2. OS Feature Upgrade Execution" disable="false">
+    <step type="BDD_RunCommandLine" name="Invocación Windows Setup Engine" disable="false" continueOnError="false">
+      <defaultVarList>
+        <variable name="CommandLine" property="CommandLine">"%DEPLOYROOT%\Operating Systems\Windows10_vNext\setup.exe" /Auto Upgrade /Quiet /NoReboot /DynamicUpdate Disable /ShowOOBE none /CompactOS disable</variable>
+      </defaultVarList>
+    </step>
+  </group>
+
+  <!-- FASE 3: POST-UPGRADE HARDENING & ACTIVACIÓN ESU -->
+  <group name="3. Post-Upgrade Hardening &amp; ESU" disable="false">
+    <step type="BDD_RunPowerShellScript" name="Inyección de Licencia ESU" disable="false" continueOnError="true">
+      <defaultVarList>
+        <variable name="ScriptName" property="ScriptName">%SCRIPTROOT%\src\core\Invoke-DeploymentTask.ps1</variable>
+        <variable name="Parameters" property="Parameters">-TaskName "ESU-Activation" -ScriptBlock { %SCRIPTROOT%\src\provisioning\Invoke-EsuActivation.ps1 -EsuProductKey "%ESU_PRODUCT_KEY%" }</variable>
+      </defaultVarList>
+    </step>
+    
+    <step type="BDD_RunCommandLine" name="Purga de Artefactos Temporales de Upgrade" disable="false" continueOnError="true">
+      <defaultVarList>
+        <variable name="CommandLine" property="CommandLine">cmd.exe /c rmdir /s /q "C:\$WINDOWS.~BT" &amp; rmdir /s /q "C:\$SysReset"</variable>
+      </defaultVarList>
+    </step>
+  </group>
+
+</sequence>
