@@ -7,22 +7,27 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ---
 
-## [0.0.1] - 2026-07-28 - [server-side-architecture] - [Unreleased]
+## [1.0.0] - 2026-07-28 - [server-side-architecture] - [Unreleased]
 
 ### Added
 - Incorporación del archivo `CHANGELOG.md`.
 - Incorporacion del documento `RB-IT-W10-1.2.2.pdf`.
 
 ### Changed
-- Arquitectura Server-Side: Reestructuración de la lógica de despliegue, trasladando la ejecución de scripts locales en el endpoint hacia Task Sequences centralizadas en servidor y *Offline Image Servicing* via DISM.
-- Hardening de Privacidad: La gestión de privacidad se centraliza en la compilación dinámica de `unattend.xml` en WinPE y en directivas GPO de Active Directory (`GPO-WIN10-SECURITY-BASELINE-v1.2`).
-- Gestión de Entorno: Se elimina la dependencia de crear el directorio local `C:\IT_Deployment_<GUID>` y la aplicación de exclusiones temporales en Microsoft Defender.
-- Reorganización de Workflows de BIOS: Modularización de los métodos alternativos de aprovisionamiento desatendido (Opción B.1: DPAPI y Opción B.2: ThinkBios-Config) trasladando sus artefactos (`New-BiosEncryptedSecret.ps1`, `Set-LenovoBiosWithDpapi.ps1`, `Set-LenovoBiosWithThinkBios.ps1`) al subdirectorio `src/bios/workflows/` (o `src/bios/methods/`).
-- Reorganización de Documentación y Assets: Renombrado del directorio `docs/img/` a `docs/assets/` para alojar los recursos gráficos.
+- Invocación de métodos WMI/CIM y la sintaxis de la contraseña de supervisor en el script de BIOS Lenovo.
+- Gestion de debloat para ejecutar la depuración de AppX en modo offline (servidor/WinPE) en lugar de la imagen activa.
+- Gestion de características de Windows para usar DISM en modo offline y la ruta SxS del servidor.
+- Gestion de energía para limitar el ajuste según chasis en la Task Sequence y delegar la configuración del Registro a la GPO.
+- Script para generar secretos cifrados vía DPAPI para la BIOS.
+- Script para la aplicación desatendida de la Baseline de BIOS con credenciales cifradas.
+- Script para aplicar configuraciones de BIOS mediante el módulo oficial de Lenovo.
+- Modularización de los métodos alternativos de aprovisionamiento desatendido al subdirectorio `src/bios/workflows/`.
+- Renombrado del directorio `docs/img/` a `docs/assets/` para alojar los recursos gráficos.
 
 ### Deprecated
-- `src/hardening/Set-WindowsPrivacyHardening.ps1`: Deprecado en favor de la inyección vía `unattend.xml` y GPO On-Premise. Movido al directorio `/deprecated`.
-- `src/provisioning/Invoke-SecureDeploymentEnvironment.ps1`: Deprecado al descartarse los workspaces temporales en el endpoint. Movido al directorio `/deprecated`.
+- `src/hardening/Set-WindowsPrivacyHardening.ps1`: En favor de la inyección vía `unattend.xml` y GPO On-Premise. Movido al directorio `/deprecated`.
+- `src/provisioning/Invoke-SecureDeploymentEnvironment.ps1`: Se descartan los workspaces temporales en el endpoint. Movido al directorio `/deprecated`.
+- `diskpart'partition'uefi.txt`: Es reemplazado por la acción dinámica de la Task Sequence.
 
 ---
 
