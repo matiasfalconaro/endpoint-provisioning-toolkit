@@ -5,6 +5,24 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 [Version] - Fecha - [Rama] - [Estado]
 
+
+## [1.1.0] - 2026-07-28 - [main] - [Unreleased]
+
+### Added
+- Estandarización de logging centralizado, manejo de excepciones y códigos de salida.
+- Auditoría de salud de SSD (S.M.A.R.T.), ciclos de batería y versión de firmware de la flota.
+- Sanitización criptográfica y borrado seguro de almacenamiento en la fase de decomisionamiento.
+- Inyección y validación desatendida de licencias ESU.
+- Orquestación de In-Place Upgrades.
+- Auditoría de Secure Boot, dTPM 2.0 y soporte de atestación remota.
+- Habilitación de cifrado XTS-AES 256, protector dTPM 2.0 y resguardo obligatorio de claves de recuperación en Active Directory DS.
+- Activación de motores de protección y onboarding desatendido a Defender for Endpoint.
+- Firma digital masiva de scripts y auditoría de integridad Authenticode.
+- Generación y auditoría de integridad SHA-256 en repositorios On-Premise.
+- Eliminación segura de credenciales efímeras y destrucción de archivos `unattend.xml`.
+- Suite de pruebas unitarias e integración en Pester v5.x para la validación de conformidad post-despliegue.
+- Orquestación desatendida de Pester y la exportación de reportes NUnit XML al servidor central (`NAS-CORP01`).
+
 ---
 
 ## [1.0.0] - 2026-07-28 - [server-side-architecture] - [Unreleased]
