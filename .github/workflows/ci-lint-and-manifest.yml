@@ -63,8 +63,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet -- manifest.json; then
-            git add manifest.json
+          git add -f manifest.json
+          if ! git diff --cached --quiet -- manifest.json; then
             git commit -m "chore(ci): actualizar manifest.json [skip ci]"
             git push
           else

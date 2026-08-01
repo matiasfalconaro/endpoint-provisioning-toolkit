@@ -22,6 +22,7 @@ unattend.xml
 Unattend.xml
 ThinkPad_T14_Baseline.ini
 Control.xml
+manifest.json
 
 *.log
 *.txt.log
