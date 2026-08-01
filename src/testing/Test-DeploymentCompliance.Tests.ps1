@@ -1,0 +1,91 @@
+<#
+.SYNOPSIS
+    Suite de Pruebas de Cumplimiento Post-Aprovisionamiento Pester (Zero-Touch Validation).
+.DESCRIPTION
+    Audita la postura de seguridad, parches, licenciamiento ESU, estado de BitLocker, EDR,
+    firmas de código e higiene de credenciales del endpoint recién aprovisionado.
+.EXAMPLE
+    Invoke-Pester -Path ".\src\testing\Test-DeploymentCompliance.Tests.ps1" -Output Detailed
+#>
+
+Describe "Auditoría Global de Conformidad de Infraestructura (RB-IT-W10-1.2.2)" {
+
+    Context "1. Seguridad de Firmware y Arranque Seguro" {
+        It "Secure Boot debe estar habilitado en el firmware UEFI" {
+            $SecureBoot = Confirm-SecureBootUEFI -ErrorAction SilentlyContinue
+            $SecureBoot | Should -BeTrue
+        }
+
+        It "El microcontrolador dTPM 2.0 debe estar presente y listo" {
+            $Tpm = Get-Tpm -ErrorAction SilentlyContinue
+            $Tpm.TpmPresent | Should -BeTrue
+            $Tpm.TpmReady | Should -BeTrue
+        }
+
+        It "El soporte de Device Health Attestation (Measured Boot) debe estar disponible" {
+            $Tpm = Get-Tpm -ErrorAction SilentlyContinue
+            $Tpm.IsCapPresent("Attestation") | Should -BeTrue
+        }
+    }
+
+    Context "2. Cifrado de Unidad BitLocker y Respaldado de Claves" {
+        It "El volumen del sistema (C:) debe estar cifrado con XTS-AES 256" {
+            $BitLocker = Get-BitLockerVolume -MountPoint $env:SystemDrive
+            $BitLocker.ProtectionStatus | Should -Be "On"
+            $BitLocker.EncryptionMethod | Should -Be "XtsAes256"
+        }
+
+        It "Debe existir un protector dTPM y una Clave de Recuperación de 48 dígitos" {
+            $BitLocker = Get-BitLockerVolume -MountPoint $env:SystemDrive
+            $Protectors = $BitLocker.KeyProtector.KeyProtectorType
+            $Protectors | Should -Contain "Tpm"
+            $Protectors | Should -Contain "RecoveryPassword"
+        }
+    }
+
+    Context "3. Postura de Antivirus, EDR y XDR (Microsoft Defender)" {
+        It "Microsoft Defender Antivirus debe estar activo y con protección en tiempo real" {
+            $Defender = Get-MpComputerStatus
+            $Defender.AntivirusEnabled | Should -BeTrue
+            $Defender.RealTimeProtectionEnabled | Should -BeTrue
+        }
+
+        It "El servicio EDR Defender for Endpoint (Sense) debe estar ejecutándose" {
+            $Sense = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
+            $Sense.Status | Should -Be "Running"
+            $Sense.StartType | Should -Be "Automatic"
+        }
+    }
+
+    Context "4. Firma de Código e Integridad PowerShell (Authenticode)" {
+        It "La política de ejecución de PowerShell debe ser AllSigned o RemoteSigned" {
+            $Policy = Get-ExecutionPolicy
+            $Policy | Should -BeIn @("AllSigned", "RemoteSigned")
+        }
+    }
+
+    Context "5. Higiene de Credenciales y Purga de AutoLogon" {
+        It "No deben existir contraseñas ni usuario en texto plano de AutoLogon en el Registro" {
+            $Winlogon = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
+            $Winlogon.AutoAdminLogon | Should -Not -Be "1"
+            $Winlogon.DefaultPassword | Should -BeNullOrEmpty
+        }
+
+        It "El archivo de respuesta desatendida unattend.xml debe estar destruido" {
+            $UnattendExists = Test-Path -Path "$env:SystemRoot\Panther\unattend.xml"
+            $UnattendExists | Should -BeFalse
+        }
+    }
+
+    Context "6. Mantenimiento y Ciclo de Vida (Licenciamiento ESU / Salud SSD)" {
+        It "El sistema operativo debe mantener un estado de licencia activo" {
+            $License = Get-CimInstance -ClassName "SoftwareLicensingProduct" | Where-Object { $_.PartialProductKey -and $_.LicenseStatus -eq 1 }
+            $License | Should -Not -BeNullOrEmpty
+        }
+
+        It "No deben quedar workspaces efímeros o instaladores temporales en C:\" {
+            $TempFolderExists = Test-Path -Path "C:\IT_Deployment_*"
+            $TempFolderExists | Should -BeFalse
+        }
+    }
+}
