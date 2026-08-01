@@ -1,0 +1,18 @@
+# .gitattributes
+# Normaliza finales de línea para que el hash SHA-256 de estos archivos sea
+# idéntico sin importar si el checkout ocurre en un runner Linux (CI) o en
+# Windows (NAS-CORP01, endpoints).
+
+* text=auto eol=lf
+
+*.ps1       text eol=lf
+*.psm1      text eol=lf
+*.psd1      text eol=lf
+*.xml       text eol=lf
+*.template  text eol=lf
+*.ini       text eol=lf
+*.json      text eol=lf
+
+# Binarios explícitos, por si en el futuro entra algo así al repo
+*.png binary
+*.exe binary
