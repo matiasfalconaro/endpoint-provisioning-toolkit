@@ -228,6 +228,23 @@ try {
         Result            = if ($Test7Pass) { "PASS" } else { "FAIL" }
     }
 
+    # Test 8: Enable-WindowsOptionalFeatures.ps1 captura $LASTEXITCODE de DISM
+    # Antes, ninguna de las 6 llamadas a dism.exe revisaba el exit code; un
+    # fallo real (ej. 0x800f081f, documentado en runbook 14.2) dejaba pasar
+    # el script como "completado exitosamente" sin que nadie se enterara.
+    Write-Host "`n=== Ejecutando: Test 8 - Enable-WindowsOptionalFeatures captura LASTEXITCODE ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test8-features-exitcode.ps1") | Out-Null
+    $Test8ExitCode = $LASTEXITCODE
+    $Test8Pass = ($Test8ExitCode -ne 0)
+    Write-Host "Exit code: $Test8ExitCode (se espera distinto de 0 - DISM simulado falla en Paso 2)" -ForegroundColor $(if ($Test8Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 8 - Features DISM exit code"
+        ExpectedExitCode  = "≠0"
+        ActualExitCode    = $Test8ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test8Pass) { "PASS" } else { "FAIL" }
+    }
+
 } finally {
     # Restauración garantizada del manifiesto real, incluso si algo falló arriba
     if (Test-Path $ManifestBackupPath) {

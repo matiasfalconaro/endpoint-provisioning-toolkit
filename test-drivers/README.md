@@ -44,3 +44,4 @@ Escenarios de Prueba Evaluados\
 |Test 5|Persistencia de Log de Fallback Local               |PASS (Warnings: 5)              |
 |Test 6|Bug Histórico BIOS — Propagación (referencia)       |PASS (ExitCode: 0)              |
 |Test 7|Fix BIOS — Propagación Correcta (standalone)        |PASS (ExitCode: 1)              |
+|Test 8|Features DISM — Captura de Exit Code                |PASS (ExitCode ≠ 0)             |
