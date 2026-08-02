@@ -115,7 +115,10 @@ function Write-DeploymentLog {
                 New-Item -Path $LocalFallbackLogPath -ItemType Directory -Force | Out-Null
             }
             $script:ExecutionLog = Join-Path -Path $LocalFallbackLogPath -ChildPath $ExecutionLogName
-            Write-Host "[$TimeStamp] [WARNING] [$TaskName] Log de red inaccesible ('$LogPath'). Usando fallback local: $ExecutionLog"
+
+            $FallbackNotice = "[$TimeStamp] [WARNING] [$TaskName] Log de red inaccesible ('$LogPath'). Usando fallback local: $ExecutionLog"
+            Write-Host $FallbackNotice
+            $FallbackNotice | Out-File -FilePath $ExecutionLog -Append -Encoding utf8 -ErrorAction SilentlyContinue
         }
         $LogEntry | Out-File -FilePath $ExecutionLog -Append -Encoding utf8 -ErrorAction SilentlyContinue
     }

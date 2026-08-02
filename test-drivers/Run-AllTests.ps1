@@ -127,14 +127,24 @@ try {
         -ExpectedExitCode 1 `
         -ExpectedLogPattern "código de salida 87"
 
-    # Test 5: confirmar que el WARNING de fallback no se duplica en cada log
+    # Test 5: confirmar que el WARNING de fallback se persiste, uno por proceso
     $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue
     $FallbackWarnings = 0
     foreach ($Log in $AllLogs) {
         $FallbackWarnings += (Select-String -Path $Log.FullName -Pattern "Log de red inaccesible").Count
     }
     Write-Host "`n=== Test 5 - Verificación de fallback de log ===" -ForegroundColor Cyan
-    Write-Host "Advertencias de fallback encontradas: $FallbackWarnings (una por cada invocación de proceso hijo, es esperado)" -ForegroundColor Yellow
+    $Expected5 = 5  # una por cada uno de los 5 procesos hijo (Test 0 a 4)
+    $Test5Pass = ($FallbackWarnings -eq $Expected5)
+    Write-Host "Advertencias de fallback encontradas: $FallbackWarnings (esperado: $Expected5)" -ForegroundColor $(if ($Test5Pass) {"Green"} else {"Red"})
+
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 5 - Persistencia de warning de fallback"
+        ExpectedExitCode  = "N/A"
+        ActualExitCode    = "N/A"
+        LogPatternMatched = $Test5Pass
+        Result            = if ($Test5Pass) { "PASS" } else { "FAIL" }
+    }
 
 } finally {
     # Restauración garantizada del manifiesto real, incluso si algo falló arriba
