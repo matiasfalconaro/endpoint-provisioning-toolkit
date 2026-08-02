@@ -1,3 +1,26 @@
+<#
+.SYNOPSIS
+    Mock de Set-LenovoBiosBaseline.ps1 con el fix real aplicado (referencia
+    para test de regresión).
+.DESCRIPTION
+    Mismo mock de Invoke-CimMethod que MockBuggy.ps1 (siempre simula
+    "AccessDenied"), pero con el patrón corregido: sin catch que intercepte
+    el throw, y con $ErrorActionPreference = 'Stop' propio para que el
+    script sea seguro incluso si se ejecuta fuera del wrapper.
+
+    Usado por test7-bios-fixed-standalone.ps1 para confirmar que, a
+    diferencia de MockBuggy.ps1, este script aborta correctamente (exit
+    code distinto de 0) ante el mismo fallo simulado.
+.PARAMETER BiosPassword
+    Contraseña de Supervisor de la BIOS representada como SecureString.
+    No se valida contra hardware real; el mock siempre simula "AccessDenied".
+.EXAMPLE
+    $SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
+    .\Set-LenovoBiosBaseline.MockFixed.ps1 -BiosPassword $SecurePass
+    # Resultado esperado: excepción no manejada, el script aborta,
+    # exit code distinto de 0.
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]

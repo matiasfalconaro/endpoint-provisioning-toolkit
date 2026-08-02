@@ -1,3 +1,34 @@
+powershell
+<#
+.SYNOPSIS
+    Mock de Set-LenovoBiosBaseline.ps1 que reproduce el bug histórico de
+    propagación de errores (referencia para test de regresión).
+.DESCRIPTION
+    Reemplaza la llamada real a Invoke-CimMethod por un resultado simulado
+    de fallo ("AccessDenied"), sin requerir hardware Lenovo real. Conserva
+    intencionalmente el patrón con bug: un catch que intercepta el throw
+    de fallo crítico y lo convierte en Write-Error no terminante, dejando
+    que el script termine con exit code 0 pese al fallo real.
+
+    Usado por test6-bios-buggy-standalone.ps1 como prueba de regresión:
+    mientras este mock siga dando exit code 0 pese al fallo simulado,
+    confirma que el escenario original del bug sigue siendo reproducible
+    para comparación contra el fix real.
+
+    NO representa el comportamiento actual de src\bios\Set-LenovoBiosBaseline.ps1
+    (ya corregido en la rama 14-bios-error-propagation), es una copia histórica
+    congelada a propósito para no perder la capacidad de detectar si el bug
+    se reintroduce en el futuro.
+.PARAMETER BiosPassword
+    Contraseña de Supervisor de la BIOS representada como SecureString.
+    No se valida contra hardware real; el mock siempre simula "AccessDenied".
+.EXAMPLE
+    $SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
+    .\Set-LenovoBiosBaseline.MockBuggy.ps1 -BiosPassword $SecurePass
+    # Resultado esperado: Write-Error visible, pero el script termina con
+    # exit code 0.
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]

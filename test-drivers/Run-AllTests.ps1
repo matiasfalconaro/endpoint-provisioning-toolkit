@@ -1,14 +1,28 @@
 <#
 .SYNOPSIS
-    Orquesta la batería completa de pruebas locales para Invoke-DeploymentTask.ps1
-    y Confirm-ScriptIntegrity.ps1, auditoría de linter y verificación de codificación BOM.
+    Orquesta la batería completa de pruebas locales para Invoke-DeploymentTask.ps1,
+    Confirm-ScriptIntegrity.ps1 y Set-LenovoBiosBaseline.ps1, con auditoría de
+    linter y verificación opcional de codificación BOM.
 .DESCRIPTION
-    1. Normaliza recursivamente los archivos .ps1 a UTF-8 con BOM para PowerShell 5.1.
+    1. (Opcional, vía -FixEncoding) Normaliza recursivamente los archivos .ps1 en
+       src/ a UTF-8 con BOM para PowerShell 5.1. No se ejecuta por defecto.
     2. Ejecuta PSScriptAnalyzer sobre la carpeta src/ para verificar calidad de código.
-    3. Ejecuta los 5 escenarios de test-drivers/ como procesos hijos aislados.
-    4. Compara exit code y logs, restaura manifest.json y muestra un resumen general PASS/FAIL.
+    3. Ejecuta los 8 escenarios de test-drivers/ (Test 0 a Test 7) como procesos
+       hijos aislados, incluyendo los tests de propagación de errores en BIOS
+       (Test 6/7), que corren en aislamiento total sin pasar por el wrapper.
+    4. Compara exit code y logs, restaura manifest.json y muestra un resumen
+       general PASS/FAIL.
+.PARAMETER RepoRoot
+    Raíz del repositorio. Si se omite, se resuelve automáticamente en base a
+    la ubicación de este script.
+.PARAMETER FixEncoding
+    Si se especifica, normaliza todos los .ps1 de src/ a UTF-8 con BOM antes
+    de correr los tests. No es automático: correr el orquestador sin este
+    switch no modifica ningún archivo del repositorio.
 .EXAMPLE
     .\test-drivers\Run-AllTests.ps1
+.EXAMPLE
+    .\test-drivers\Run-AllTests.ps1 -FixEncoding
 #>
 
 [CmdletBinding()]
