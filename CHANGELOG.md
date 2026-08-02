@@ -20,11 +20,15 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Mejora en selección de adaptador de red, excluyendo adaptadores virtuales/VPN/Hyper-V.
 - Reemplazo de dependencia de `[System.IO.Path]::GetRelativePath` por función manual.
 - Resolución automática de SourcePath y escaneo explícito de `src/` y `templates/`.
+- Se agrega `$ErrorActionPreference = 'Stop'` propio, para seguridad si se ejecuta fuera del wrapper.
+- Se agregan escenarios de regresión para propagación de errores en BIOS y para captura de exit code en DISM.
 - `.gitignore`: Se agrega `manifest.json`.
 
 ### Fixed
 - El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.
 - Workflow CI: corrección en la detección de la primera generación de `manifest.json`.
+- Se elimina contraseña de Supervisor, guardado en NVRAM dejando que el script reportara éxito pese al fallo real.
+- Se arregla un fallo de DISM dejaba pasar el script como completado exitosamente sin registrar el error.
 
 ---
 
