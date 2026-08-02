@@ -16,6 +16,8 @@ param(
     [System.Security.SecureString]$BiosPassword
 )
 
+$ErrorActionPreference = 'Stop'
+
 # SecureString -> puntero en memoria de ejecución activa
 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
 $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
@@ -36,8 +38,10 @@ try {
     foreach ($Setting in $BiosSettings.GetEnumerator()) {
         $Argument = "$($Setting.Key),$($Setting.Value);"
         $Result = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $Argument }
-        
+
         if ($Result.return -ne "Success") {
+            # Advertencia, no fallo duro: un setting individual no soportado en un
+            # modelo puntual no debe abortar toda la baseline.
             Write-Warning "Falla al aplicar parámetro de BIOS [$($Setting.Key)]: Código de retorno '$($Result.return)'"
         }
     }
@@ -45,7 +49,7 @@ try {
     # Inyección aislada de la contraseña de Supervisor
     $PassArgument = "Supervisor Password,Set,$PlainPassword;"
     $PassResult = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $PassArgument }
-    
+
     if ($PassResult.return -ne "Success") {
         throw "No se pudo establecer la contraseña de Supervisor en la BIOS. Retorno WMI: $($PassResult.return)"
     }
@@ -58,10 +62,9 @@ try {
 
     Write-Host "Baseline de BIOS aplicada y guardada exitosamente." -ForegroundColor Green
 
-} catch {
-    Write-Error "Error crítico durante la configuración de BIOS vía CIM/WMI: $_"
 } finally {
-    # Purga obligatoria de credenciales en memoria
+    # Purga obligatoria de credenciales en memoria.
+    # Nota: se ejecuta tanto en éxito como en fallo.
     if ($BSTR -ne [System.IntPtr]::Zero) {
         [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     }
