@@ -180,6 +180,40 @@ try {
         Result            = if ($Test5Pass) { "PASS" } else { "FAIL" }
     }
 
+    # Test 6: bug histórico de propagación de errores en BIOS (standalone, sin wrapper)
+    # Referencia de regresión: confirma que Set-LenovoBiosBaseline.MockBuggy.ps1 (con
+    # catch que traga errores) sigue reproduciendo el bug original si se ejecuta fuera
+    # del wrapper. El wrapper por sí solo enmascaraba este bug al heredar su propio
+    # $ErrorActionPreference='Stop' — este test prueba el script en aislamiento real.
+    Write-Host "`n=== Ejecutando: Test 6 - Bug histórico BIOS (referencia, standalone) ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test6-bios-buggy-standalone.ps1") | Out-Null
+    $Test6ExitCode = $LASTEXITCODE
+    $Test6Pass = ($Test6ExitCode -eq 0)
+    Write-Host "Exit code: $Test6ExitCode (se espera 0 - confirma que el mock buggy reproduce el problema histórico)" -ForegroundColor $(if ($Test6Pass) {"Yellow"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 6 - Bug histórico BIOS (referencia)"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test6ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test6Pass) { "PASS" } else { "FAIL" }
+    }
+
+    # Test 7: script de BIOS con el fix real, standalone (sin wrapper)
+    # Confirma que sin catch + con $ErrorActionPreference='Stop' propio, el script
+    # aborta correctamente incluso invocado fuera del wrapper.
+    Write-Host "`n=== Ejecutando: Test 7 - Propagación correcta BIOS (fix real, standalone) ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test7-bios-fixed-standalone.ps1") | Out-Null
+    $Test7ExitCode = $LASTEXITCODE
+    $Test7Pass = ($Test7ExitCode -eq 1)
+    Write-Host "Exit code: $Test7ExitCode (esperado: 1)" -ForegroundColor $(if ($Test7Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 7 - Fix BIOS standalone"
+        ExpectedExitCode  = 1
+        ActualExitCode    = $Test7ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test7Pass) { "PASS" } else { "FAIL" }
+    }
+
 } finally {
     # Restauración garantizada del manifiesto real, incluso si algo falló arriba
     if (Test-Path $ManifestBackupPath) {
