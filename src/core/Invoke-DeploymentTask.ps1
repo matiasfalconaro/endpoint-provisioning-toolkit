@@ -1,50 +1,58 @@
-<#
+﻿<#
 .SYNOPSIS
-    Wrapper genérico de Task Sequence con validación de integridad, logging centralizado
+    Wrapper genÃ©rico de Task Sequence con validaciÃ³n de integridad, logging centralizado
     y manejo de errores.
 .DESCRIPTION
     Ejecuta cualquier ScriptBlock dentro de una estructura estandarizada que:
     - Valida integridad SHA-256 (manifest.json) y firma Authenticode del script real
       invocado, antes de cederle el control.
-    - Captura tanto excepciones de PowerShell como códigos de salida de procesos
+    - Captura tanto excepciones de PowerShell como cÃ³digos de salida de procesos
       externos (DISM, ThinInstaller, Diskpart, etc.).
-    - Centraliza logs en red, con fallback local si el share no está disponible.
-    - Purga best-effort de memoria tras cada ejecución.
+    - Centraliza logs en red, con fallback local si el share no estÃ¡ disponible.
+    - Purga best-effort de memoria tras cada ejecuciÃ³n.
 .PARAMETER ScriptPath
     Ruta del archivo .ps1 real que el ScriptBlock invoca. Requerido para poder validar
-    integridad y firma. Fail-closed por defecto: sin este parámetro, la tarea se aborta,
+    integridad y firma. Fail-closed por defecto: sin este parÃ¡metro, la tarea se aborta,
     salvo -AllowUnvalidatedScript.
 .PARAMETER AllowUnvalidatedScript
-    Permite ejecutar sin -ScriptPath. Uso previsto solo para lógica inline que no invoca
+    Permite ejecutar sin -ScriptPath. Uso previsto solo para lÃ³gica inline que no invoca
     un archivo del repo. Cada uso queda registrado como WARNING en el log.
 .PARAMETER SkipIntegrityValidation
-    Omite la comparación de hash contra manifest.json para esta invocación puntual.
+    Omite la comparaciÃ³n de hash contra manifest.json para esta invocaciÃ³n puntual.
 .PARAMETER SkipSignatureValidation
-    Omite la validación de firma Authenticode para esta invocación puntual. Bypass
-    temporal previsto mientras la PKI corporativa todavía no está disponible para 
+    Omite la validaciÃ³n de firma Authenticode para esta invocaciÃ³n puntual. Bypass
+    temporal previsto mientras la PKI corporativa todavÃ­a no estÃ¡ disponible para 
     firmar los scripts del repositorio.
     Independiente de -SkipIntegrityValidation: se puede validar integridad sin exigir
     firma, o viceversa.
 .PARAMETER ManifestPath
-    Ruta al manifest.json a validar contra. Default: ubicación estándar en NAS-CORP01.
+    Ruta al manifest.json a validar contra. Default: ubicaciÃ³n estÃ¡ndar en NAS-CORP01.
 .EXAMPLE
-    # Producción, con PKI ya operativa:
+    # ProducciÃ³n, con PKI ya operativa:
     .\Invoke-DeploymentTask.ps1 -TaskName "BIOS-Baseline" `
         -ScriptPath "\\NAS-CORP01\Deployment\Scripts\src\bios\Set-LenovoBiosBaseline.ps1" `
         -ScriptBlock { & "...\Set-LenovoBiosBaseline.ps1" -BiosPassword $SecurePass }
 .EXAMPLE
-    # Desarrollo local, sin certificado de firma todavía:
+    # Desarrollo local, sin certificado de firma todavÃ­a:
     .\Invoke-DeploymentTask.ps1 -TaskName "Test-Features" -SkipSignatureValidation `
         -ScriptPath ".\src\features\Enable-WindowsOptionalFeatures.ps1" `
         -ManifestPath ".\manifest.json" `
         -ScriptBlock { Write-Host "simulando ejecucion..." }
 #>
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSReviewUnusedParameter', 'TaskName',
+    Justification = 'Usado dentro del closure Write-DeploymentLog; PSScriptAnalyzer no rastrea uso en funciones anidadas.'
+)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSReviewUnusedParameter', 'LocalFallbackLogPath',
+    Justification = 'Usado dentro del closure Write-DeploymentLog (bloque catch); mismo caso que TaskName.'
+)]
 param (
     [Parameter(Mandatory = $true, HelpMessage = "Nombre descriptivo de la tarea para el log")]
     [string]$TaskName,
 
-    [Parameter(Mandatory = $true, HelpMessage = "Bloque de código PowerShell a ejecutar")]
+    [Parameter(Mandatory = $true, HelpMessage = "Bloque de cÃ³digo PowerShell a ejecutar")]
     [scriptblock]$ScriptBlock,
 
     [Parameter(Mandatory = $false, HelpMessage = "Ruta del script real a validar antes de ejecutar")]
@@ -127,30 +135,30 @@ function Write-DeploymentLog {
 $ExitCode = 0
 
 try {
-    Write-DeploymentLog -Message "Iniciando ejecución de la tarea..." -Level "INFO"
+    Write-DeploymentLog -Message "Iniciando ejecuciÃ³n de la tarea..." -Level "INFO"
 
     if (-not $ScriptPath) {
         if (-not $AllowUnvalidatedScript) {
-            throw "SEGURIDAD CRÍTICA: -ScriptPath no fue provisto. Use -AllowUnvalidatedScript solo para lógica inline que no invoca un archivo del repo."
+            throw "SEGURIDAD CRÃTICA: -ScriptPath no fue provisto. Use -AllowUnvalidatedScript solo para lÃ³gica inline que no invoca un archivo del repo."
         }
         Write-DeploymentLog -Message "ADVERTENCIA DE SEGURIDAD: Ejecutando sin -ScriptPath por -AllowUnvalidatedScript. No se valida integridad ni firma." -Level "WARNING"
     } else {
         $ResolvedScriptPath = (Resolve-Path -LiteralPath $ScriptPath -ErrorAction Stop).ProviderPath
 
         if ($SkipIntegrityValidation) {
-            Write-DeploymentLog -Message "Validación de integridad SHA-256 omitida explícitamente para: $ResolvedScriptPath" -Level "WARNING"
+            Write-DeploymentLog -Message "ValidaciÃ³n de integridad SHA-256 omitida explÃ­citamente para: $ResolvedScriptPath" -Level "WARNING"
         } else {
             Write-DeploymentLog -Message "Validando integridad SHA-256 contra manifest.json..." -Level "INFO"
             & (Join-Path $IntegrityToolsPath "Confirm-ScriptIntegrity.ps1") -Action Validate -ManifestPath $ManifestPath
         }
 
         if ($SkipSignatureValidation) {
-            Write-DeploymentLog -Message "ADVERTENCIA DE SEGURIDAD: Validación de firma Authenticode omitida explícitamente (PKI no disponible aún) para: $ResolvedScriptPath" -Level "WARNING"
+            Write-DeploymentLog -Message "ADVERTENCIA DE SEGURIDAD: ValidaciÃ³n de firma Authenticode omitida explÃ­citamente (PKI no disponible aÃºn) para: $ResolvedScriptPath" -Level "WARNING"
         } else {
             Write-DeploymentLog -Message "Validando firma Authenticode de: $ResolvedScriptPath" -Level "INFO"
             $SignatureValid = & (Join-Path $IntegrityToolsPath "Set-AuthenticodeSignature.ps1") -ScriptPath $ResolvedScriptPath -ValidateOnly
             if (-not $SignatureValid) {
-                throw "SEGURIDAD CRÍTICA: Firma Authenticode inválida o ausente en: $ResolvedScriptPath"
+                throw "SEGURIDAD CRÃTICA: Firma Authenticode invÃ¡lida o ausente en: $ResolvedScriptPath"
             }
         }
     }
@@ -158,7 +166,7 @@ try {
     & $ScriptBlock
 
     if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw "El proceso externo invocado dentro de la tarea finalizó con código de salida $LASTEXITCODE."
+        throw "El proceso externo invocado dentro de la tarea finalizÃ³ con cÃ³digo de salida $LASTEXITCODE."
     }
 
     Write-DeploymentLog -Message "Tarea completada exitosamente." -Level "INFO"
@@ -166,13 +174,13 @@ try {
 } catch {
     $ErrorMessage = $_.Exception.Message
     $FailedItem = $_.InvocationInfo.MyCommand
-    Write-DeploymentLog -Message "ERROR CRÍTICO en [$FailedItem]: $ErrorMessage" -Level "ERROR"
+    Write-DeploymentLog -Message "ERROR CRÃTICO en [$FailedItem]: $ErrorMessage" -Level "ERROR"
     $ExitCode = 1
 
 } finally {
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
-    Write-DeploymentLog -Message "Limpieza de memoria y finalización del wrapper. Exit code: $ExitCode" -Level "INFO"
+    Write-DeploymentLog -Message "Limpieza de memoria y finalizaciÃ³n del wrapper. Exit code: $ExitCode" -Level "INFO"
 }
 
 exit $ExitCode
