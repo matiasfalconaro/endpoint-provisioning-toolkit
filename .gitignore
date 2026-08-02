@@ -47,4 +47,7 @@ $RECYCLE.BIN/
 
 /Modules/
 /AppX/
-/test-drivers/
+test-drivers/*.log
+test-drivers/*.txt
+test-drivers/*.backup.json
+/TODO/
