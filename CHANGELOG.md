@@ -5,6 +5,28 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 [Version] - Fecha - [Rama] - [Estado]
 
+---
+
+## [1.2.0] - 2026-07-28 - [main] - [Unreleased]
+
+### Added
+- CI Pipeline: se añade workflow con PSScriptAnalyzer para validación estática y generación automática de `manifest.json`.
+- Validación de integridad SHA-256 y firma Authenticode del script invocado antes de cederle el control, con bypass explícito.
+- Captura de código de salida de procesos externos, además de excepciones de PowerShell.
+- Fallback de logging a ruta local cuando el servidor de logs no está disponible.
+- Suite de pruebas locales: Integra PSScriptAnalyzer, valida los escenarios del wrapper y normaliza codificación a UTF-8 con BOM.
+
+### Changed
+- Mejora en selección de adaptador de red, excluyendo adaptadores virtuales/VPN/Hyper-V.
+- Reemplazo de dependencia de `[System.IO.Path]::GetRelativePath` por función manual.
+- Resolución automática de SourcePath y escaneo explícito de `src/` y `templates/`.
+- `.gitignore`: Se agrega `manifest.json`.
+
+### Fixed
+- El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.
+- Workflow CI: corrección en la detección de la primera generación de `manifest.json`.
+
+---
 
 ## [1.1.0] - 2026-07-28 - [main] - [Unreleased]
 
@@ -25,7 +47,7 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ---
 
-## [1.0.0] - 2026-07-28 - [server-side-architecture] - [Unreleased]
+## [1.0.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
 - Incorporación del archivo `CHANGELOG.md`.
@@ -52,4 +74,4 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 ## [0.0.1] - 2026-06-15 - [main] - [Unreleased]
 
 ### Added
-- Versión inicial del repositorio con la estructura base de automatización para BIOS, Debloat, Features, Hardening, Optimization y Provisioning (SOP-IT-W10-1.2.0).
+- Versión inicial del repositorio con la estructura base de automatización para BIOS, Debloat, Features, Hardening, Optimization y Provisioning.
