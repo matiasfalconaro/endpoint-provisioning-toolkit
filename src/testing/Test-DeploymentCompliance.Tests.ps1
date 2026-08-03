@@ -4,11 +4,30 @@
 .DESCRIPTION
     Audita la postura de seguridad, parches, licenciamiento ESU, estado de BitLocker, EDR,
     firmas de código e higiene de credenciales del endpoint recién aprovisionado.
+.PARAMETER DeploymentRoot
+    Ruta a la carpeta src/ del repositorio de despliegue. MECANISMO RECOMENDADO:
+    pasarla explícitamente vía New-PesterContainer -Data desde quien invoca Pester
+    (ej. Invoke-PostDeploymentTest.ps1), ya que $PSScriptRoot no se propaga de
+    forma confiable dentro del modelo de ejecución interno de Pester v5+. Si se
+    omite, se intenta una cadena de resolución automática (PSScriptRoot,
+    PSCommandPath, MyInvocation, directorio actual) como mejor esfuerzo, pero
+    puede dar Skip si ninguna resuelve correctamente.
+    fase de Discovery y la fase de Run de Pester v5+.
 .EXAMPLE
     Invoke-Pester -Path ".\src\testing\Test-DeploymentCompliance.Tests.ps1" -Output Detailed
+.EXAMPLE
+    $Container = New-PesterContainer -Path ".\src\testing\Test-DeploymentCompliance.Tests.ps1" `
+        -Data @{ DeploymentRoot = "\\NAS-CORP01\Deployment\Scripts\src" }
+    Invoke-Pester -Container $Container
 #>
 
-Describe "Auditoría Global de Conformidad de Infraestructura (RB-IT-W10-1.2.2)" {
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$DeploymentRoot
+)
+
+
+Describe "Auditoría Global de Conformidad de Infraestructura" {
 
     Context "1. Seguridad de Firmware y Arranque Seguro" {
         It "Secure Boot debe estar habilitado en el firmware UEFI" {
@@ -58,9 +77,37 @@ Describe "Auditoría Global de Conformidad de Infraestructura (RB-IT-W10-1.2.2)"
     }
 
     Context "4. Firma de Código e Integridad PowerShell (Authenticode)" {
-        It "La política de ejecución de PowerShell debe ser AllSigned o RemoteSigned" {
+
+        It "La política de ejecución de PowerShell debe ser AllSigned" {
             $Policy = Get-ExecutionPolicy
-            $Policy | Should -BeIn @("AllSigned", "RemoteSigned")
+            $Policy | Should -Be "AllSigned"
+        }
+
+        It "Todos los scripts desplegados en src/ deben tener firma Authenticode válida" {
+            if (-not $DeploymentRoot -or -not (Test-Path $DeploymentRoot)) {
+                Set-ItResult -Skipped -Because "DeploymentRoot no fue provisto o no es accesible. Debe pasarse via New-PesterContainer -Data @{ DeploymentRoot = '...' }"
+                return
+            }
+
+            $Scripts = Get-ChildItem -Path $DeploymentRoot -Filter "*.ps1" -Recurse
+            $Unsigned = foreach ($Script in $Scripts) {
+                $Signature = Get-AuthenticodeSignature -FilePath $Script.FullName
+                if ($Signature.Status -ne 'Valid') {
+                    [PSCustomObject]@{ Path = $Script.FullName; Status = $Signature.Status }
+                }
+            }
+
+            # Se calcula el mensaje ANTES del Should, evitando el if/else inline dentro
+            # de -Because, que generaba un error de parseo ambiguo en PowerShell/Pester
+            # ("The term 'if' is not recognized as the name of a cmdlet").
+            $Reason = if ($Unsigned) {
+                "los siguientes scripts no tienen firma Authenticode valida: " +
+                (($Unsigned | ForEach-Object { "$($_.Path) [$($_.Status)]" }) -join "; ")
+            } else {
+                "todos los scripts tienen firma valida"
+            }
+
+            $Unsigned | Should -BeNullOrEmpty -Because $Reason
         }
     }
 
