@@ -65,15 +65,26 @@ Describe "Auditoría Global de Conformidad de Infraestructura (RB-IT-W10-1.2.2)"
     }
 
     Context "5. Higiene de Credenciales y Purga de AutoLogon" {
-        It "No deben existir contraseñas ni usuario en texto plano de AutoLogon en el Registro" {
-            $Winlogon = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
-            $Winlogon.AutoAdminLogon | Should -Not -Be "1"
-            $Winlogon.DefaultPassword | Should -BeNullOrEmpty
+        It "No deben existir credenciales de AutoLogon en texto plano en el Registro" {
+            $Winlogon = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -ErrorAction SilentlyContinue
+            $Winlogon.AutoAdminLogon    | Should -Not -Be "1"
+            $Winlogon.DefaultPassword   | Should -BeNullOrEmpty
+            $Winlogon.AutoLogonCount    | Should -BeNullOrEmpty
+            $Winlogon.DefaultUserName   | Should -BeNullOrEmpty
+            $Winlogon.DefaultDomainName | Should -BeNullOrEmpty
         }
 
-        It "El archivo de respuesta desatendida unattend.xml debe estar destruido" {
-            $UnattendExists = Test-Path -Path "$env:SystemRoot\Panther\unattend.xml"
-            $UnattendExists | Should -BeFalse
+        It "Ningún archivo de respuesta desatendida (unattend.xml) debe persistir en ninguna ubicación conocida" {
+            $UnattendPaths = @(
+                "$env:SystemRoot\Panther\unattend.xml",
+                "$env:SystemRoot\Panther\Unattend\unattend.xml",
+                "$env:SystemRoot\System32\Sysprep\unattend.xml",
+                "C:\unattend.xml"
+            )
+
+            foreach ($Path in $UnattendPaths) {
+                Test-Path -Path $Path | Should -BeFalse -Because "el archivo '$Path' no debería persistir tras la purga de AutoLogon"
+            }
         }
     }
 
