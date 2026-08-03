@@ -58,9 +58,36 @@ Describe "Auditoría Global de Conformidad de Infraestructura (RB-IT-W10-1.2.2)"
     }
 
     Context "4. Firma de Código e Integridad PowerShell (Authenticode)" {
-        It "La política de ejecución de PowerShell debe ser AllSigned o RemoteSigned" {
+        It "La política de ejecución de PowerShell debe ser AllSigned" {
             $Policy = Get-ExecutionPolicy
-            $Policy | Should -BeIn @("AllSigned", "RemoteSigned")
+            $Policy | Should -Be "AllSigned"
+        }
+
+        It "Todos los scripts desplegados en src/ deben tener firma Authenticode válida" {
+            $DeploymentRoot = "\\NAS-CORP01\Deployment\Scripts\src"
+
+            if (-not (Test-Path $DeploymentRoot)) {
+                Set-ItResult -Skipped -Because "Repositorio de despliegue no accesible desde este contexto ($DeploymentRoot)"
+                return
+            }
+
+            $Scripts = Get-ChildItem -Path $DeploymentRoot -Filter "*.ps1" -Recurse
+            $Unsigned = foreach ($Script in $Scripts) {
+                $Signature = Get-AuthenticodeSignature -FilePath $Script.FullName
+                if ($Signature.Status -ne 'Valid') {
+                    [PSCustomObject]@{
+                        Path   = $Script.FullName
+                        Status = $Signature.Status
+                    }
+                }
+            }
+
+            $Unsigned | Should -BeNullOrEmpty -Because (
+                if ($Unsigned) {
+                    "los siguientes scripts no tienen firma Authenticode valida: " +
+                    (($Unsigned | ForEach-Object { "$($_.Path) [$($_.Status)]" }) -join "; ")
+                } else { "" }
+            )
         }
     }
 
