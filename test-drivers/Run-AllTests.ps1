@@ -95,14 +95,25 @@ function Invoke-TestDriver {
         throw "No se encontró el driver: $DriverPath"
     }
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File $DriverPath
+    # Se captura stdout del proceso hijo además de dejarlo pasar a consola,
+    # (parte del diagnóstico real nunca llega al archivo de log del wrapper)
+    $RawOutput = powershell -NoProfile -ExecutionPolicy Bypass -File $DriverPath 2>&1
+    $RawOutput | ForEach-Object { Write-Host $_ }
     $ActualExitCode = $LASTEXITCODE
+
+    # Prefijo RAWOUTPUT (en vez de una MAC real) para que Save-TestLogsToSqlite
+    # reconozca este archivo como salida cruda de consola, no como log del
+    # wrapper, y no infiera una MAC falsa a partir del nombre del test.
+    $SafeName = $Name -replace '[^\w]', '_'
+    $RawLogPath = Join-Path $FallbackLogDir "RAWOUTPUT_$($SafeName)_Execution.log"
+    $RawOutput | Out-File -FilePath $RawLogPath -Encoding utf8
 
     $ExitCodeMatch = ($ActualExitCode -eq $ExpectedExitCode)
 
     $LogMatch = $true
     if ($ExpectedLogPattern) {
         $RecentLog = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notlike "RAWOUTPUT_*" } |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($RecentLog) {
             $LogContent = Get-Content -Path $RecentLog.FullName -Raw
@@ -176,7 +187,9 @@ try {
         -ExpectedLogPattern "código de salida 87"
 
     # Test 5: persistencia de logs de fallback
-    $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue
+    # Se excluyen los archivos RAWOUTPUT_* para no contar dos veces el mismo warning
+    $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "RAWOUTPUT_*" }
     $FallbackWarnings = 0
     foreach ($Log in $AllLogs) {
         $FallbackWarnings += (Select-String -Path $Log.FullName -Pattern "Log de red inaccesible").Count
@@ -246,21 +259,45 @@ try {
     }
 
 } finally {
-    # Restauración garantizada del manifiesto real, incluso si algo falló arriba
+    # Restauración garantizada del manifiesto real
     if (Test-Path $ManifestBackupPath) {
         Copy-Item $ManifestBackupPath $ManifestPath -Force
         Remove-Item $ManifestBackupPath -Force
         Write-Host "`nmanifest.json restaurado a su estado original." -ForegroundColor Gray
     }
 
-    # Archivar logs de esta corrida
+    # Persistencia de logs de esta corrida
     if (Test-Path $FallbackLogDir) {
-        $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $ArchiveDir = Join-Path $PSScriptRoot "logs_$Timestamp"
-        New-Item -Path $ArchiveDir -ItemType Directory -Force | Out-Null
-        Copy-Item "$FallbackLogDir\*.log" -Destination $ArchiveDir -Force -ErrorAction SilentlyContinue
-        Remove-Item "$FallbackLogDir\*.log" -Force -ErrorAction SilentlyContinue
-        Write-Host "Logs de esta corrida archivados en: $ArchiveDir" -ForegroundColor Gray
+        # 1. Crear explícitamente el directorio si no existe
+        $LogDirTarget = Join-Path $PSScriptRoot "logs"
+        if (-not (Test-Path $LogDirTarget)) {
+            New-Item -Path $LogDirTarget -ItemType Directory -Force | Out-Null
+        }
+
+        # 2. Definir la ruta correcta sin duplicar 'test-drivers'
+        $DatabasePath = Join-Path $LogDirTarget "dev-test-logs.db"
+        $RunId = Get-Date -Format "yyyyMMdd_HHmmss"
+
+        $Persisted = $false
+        try {
+            # Asegurar importación del módulo previo a la llamada
+            Import-Module (Join-Path $PSScriptRoot "TestResultsDb.psm1") -ErrorAction Stop
+            $Persisted = Save-TestLogsToSqlite -LogDir $FallbackLogDir -DatabasePath $DatabasePath -RunId $RunId
+        } catch {
+            Write-Warning "No se pudo persistir a SQLite ($($_.Exception.Message)). Se conserva el archivado por carpeta."
+        }
+
+        if ($Persisted) {
+            Write-Host "Logs consolidados en: $DatabasePath (RunId: $RunId)" -ForegroundColor Gray
+            Remove-Item "$FallbackLogDir\*.log" -Force -ErrorAction SilentlyContinue
+        } else {
+            $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $ArchiveDir = Join-Path $PSScriptRoot "logs_$Timestamp"
+            New-Item -Path $ArchiveDir -ItemType Directory -Force | Out-Null
+            Copy-Item "$FallbackLogDir\*.log" -Destination $ArchiveDir -Force -ErrorAction SilentlyContinue
+            Remove-Item "$FallbackLogDir\*.log" -Force -ErrorAction SilentlyContinue
+            Write-Host "Logs de esta corrida archivados en: $ArchiveDir" -ForegroundColor Gray
+        }
     }
 }
 

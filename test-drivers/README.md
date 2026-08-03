@@ -1,37 +1,28 @@
 ## Pruebas Locales y Calidad de Código
 Para:
-- Ejecución de auditoría de código `PSScriptAnalyzer`
-- Normalización automática de codificación (`UTF-8 con BOM`)
-- Ssuite completa de pruebas unitarias/integración
+- Auditoría estática de código con `PSScriptAnalyzer`
+- Normalización opcional de codificación a `UTF-8 con BOM` (`-FixEncoding`)
+- Batería completa de pruebas unitarias/integración y consolidación de logs en SQLite (`TestResults.db`)
 
-```
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\test-drivers\Run-AllTests.ps1
 ```
 
-Nota sobre el Test 1: 
-Es normal que falle localmente si `Invoke-DeploymentTask.ps1` (o cualquier
-script referenciado por `-ScriptPath` en los drivers) tiene cambios pendientes
-de registrar en `manifest.json`. Se resuelve automáticamente al mergear la
-rama a `main`, donde CI regenera el manifiesto.
-
-Para forzar a que pase localmente antes del commit:
+Nota sobre el Test 1:
+Es normal que falle si existen cambios pendientes de registrar en manifest.json. En CI se resuelve automáticamente al mergear a main. Para forzar el paso local antes de un commit:
 ```
 .\src\security\Confirm-ScriptIntegrity.ps1 -Action Generate -ManifestPath .\manifest.json
 ```
 
 Nota sobre el Test 6:
-A diferencia del resto, "PASS" en el Test 6 significa que el mock buggy
-sigue reproduciendo correctamente el bug histórico (exit code 0 pese a
-un fallo real) — es una prueba de regresión, no una validación de que todo
-está bien. Si el Test 6 empezara a dar exit code distinto de 0, sería señal
-de que el mock dejó de replicar el escenario original, no de que el bug se
-resolvió (el fix real se valida en el Test 7).
+"PASS" confirma que el mock buggy sigue reproduciendo el bug histórico (ExitCode: 0 ante falla real). Es una prueba de regresión; la corrección efectiva se valida en el Test 7.
 
 ## Calidad y Reglas de Código
 - `PSScriptAnalyzer`: Integrado automáticamente en `Run-AllTests.ps1`.
-- `PSReviewUnusedParameter` (`TaskName`, `LocalFallbackLogPath`) está suprimido en `Invoke-DeploymentTask.ps1` vía `SuppressMessageAttribute` (las variables se consumen internamente dentro del closure Write-DeploymentLog.)
-- Write-Host: Permitido en componentes interactivos y scripts de aprovisionamiento en consola.
-- Encoding: Los scripts se normalizan a `UTF-8` con `BOM` para garantizar compatibilidad con `PowerShell 5.1` (opt-in vía `-FixEncoding`, no automático).
+- Persistencia de Logs: Consolida automáticamente los registros en `test-drivers\logs\TestResults.db` discriminando líneas estructuradas y no estructuradas. Si la base de datos no está disponible, conmuta automáticamente al archivado local en carpeta (logs_timestamp).
+- PSReviewUnusedParameter: Suprimido vía SuppressMessageAttribute en Invoke-DeploymentTask.ps1 (TaskName, LocalFallbackLogPath) ya que las variables se consumen dentro del closure de logging.
+- Write-Host: Permitido únicamente en consolas interactivas y utilidades.
+- Encoding: Normalización opt-in a UTF-8 con BOM mediante el switch -FixEncoding.
 
 Escenarios de Prueba Evaluados\
 |Test  |Nombre del Escenario                                |Resultado Esperado en Desarrollo|
