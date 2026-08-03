@@ -23,7 +23,8 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Se agrega `$ErrorActionPreference = 'Stop'` propio, para seguridad si se ejecuta fuera del wrapper.
 - Se agregan escenarios de regresión para propagación de errores en BIOS y para captura de exit code en DISM.
 - `.gitignore`: Se agrega `manifest.json`.
-- Amplía el Contexto 5 de Test-DeploymentCompliance.Tests.ps1 para cubrir propiedades de registro y rutas de archivo que purgan.
+- Amplía el Contexto 5 de `Test-DeploymentCompliance.Tests.ps1` para cubrir propiedades de registro y rutas de archivo que purgan.
+- Corrige contexto 4 en `Test-DeploymentCompliance.Tests.ps1`para exigir `AllSigned`, validar firma real y resolver DeploymentRoot via `-Data`
 
 ### Fixed
 - El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.
