@@ -25,7 +25,7 @@ function Save-TestLogsToSqlite {
     param(
         [string]$LogDir,
         [string]$DatabasePath,
-        [string]$RunId   # identificador único de ESTA corrida del orquestador
+        [string]$RunId
     )
 
     if (-not (Get-Module -ListAvailable -Name PSSQLite)) {
@@ -40,12 +40,17 @@ function Save-TestLogsToSqlite {
     $LogFiles = Get-ChildItem -Path $LogDir -Filter "*.log" -ErrorAction SilentlyContinue
 
     foreach ($File in $LogFiles) {
-        $MacAddress = $File.Name.Split('_')[0]
+        $IsRawOutputFile = $File.Name -like "RAWOUTPUT_*"
+        $RawMac = $File.Name.Split('_')[0]
+        $MacAddress = if ($IsRawOutputFile) { 'N/A (raw output)' } else { $RawMac }
+
         $Lines = Get-Content -Path $File.FullName
 
         foreach ($Line in $Lines) {
             if ($Line -match $Pattern) {
-                # Línea estructurada (viene de Write-DeploymentLog)
+                # Los archivos RAWOUTPUT_* capturan TODO el stdout del proceso hijo,
+                if ($IsRawOutputFile) { continue }
+
                 Invoke-SqliteQuery -DataSource $DatabasePath -Query @"
 INSERT INTO ExecutionLogs (RunId, RunTimestamp, MacAddress, LogLevel, TestName, Message, IsStructured)
 VALUES (@RunId, @Timestamp, @Mac, @Level, @Test, @Message, 1);
@@ -58,6 +63,7 @@ VALUES (@RunId, @Timestamp, @Mac, @Level, @Test, @Message, 1);
                     Message   = $Matches.Message
                 }
             } elseif ($Line.Trim()) {
+                # Líneas no estructuradas: en archivos RAWOUTPUT los queremos capturar
                 Invoke-SqliteQuery -DataSource $DatabasePath -Query @"
 INSERT INTO ExecutionLogs (RunId, RunTimestamp, MacAddress, LogLevel, TestName, Message, IsStructured)
 VALUES (@RunId, NULL, @Mac, NULL, NULL, @Message, 0);

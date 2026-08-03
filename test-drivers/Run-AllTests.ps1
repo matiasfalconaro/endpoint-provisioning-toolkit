@@ -95,14 +95,25 @@ function Invoke-TestDriver {
         throw "No se encontró el driver: $DriverPath"
     }
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File $DriverPath
+    # Se captura stdout del proceso hijo además de dejarlo pasar a consola,
+    # (parte del diagnóstico real nunca llega al archivo de log del wrapper)
+    $RawOutput = powershell -NoProfile -ExecutionPolicy Bypass -File $DriverPath 2>&1
+    $RawOutput | ForEach-Object { Write-Host $_ }
     $ActualExitCode = $LASTEXITCODE
+
+    # Prefijo RAWOUTPUT (en vez de una MAC real) para que Save-TestLogsToSqlite
+    # reconozca este archivo como salida cruda de consola, no como log del
+    # wrapper, y no infiera una MAC falsa a partir del nombre del test.
+    $SafeName = $Name -replace '[^\w]', '_'
+    $RawLogPath = Join-Path $FallbackLogDir "RAWOUTPUT_$($SafeName)_Execution.log"
+    $RawOutput | Out-File -FilePath $RawLogPath -Encoding utf8
 
     $ExitCodeMatch = ($ActualExitCode -eq $ExpectedExitCode)
 
     $LogMatch = $true
     if ($ExpectedLogPattern) {
         $RecentLog = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notlike "RAWOUTPUT_*" } |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($RecentLog) {
             $LogContent = Get-Content -Path $RecentLog.FullName -Raw
@@ -176,7 +187,9 @@ try {
         -ExpectedLogPattern "código de salida 87"
 
     # Test 5: persistencia de logs de fallback
-    $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue
+    # Se excluyen los archivos RAWOUTPUT_* para no contar dos veces el mismo warning
+    $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "RAWOUTPUT_*" }
     $FallbackWarnings = 0
     foreach ($Log in $AllLogs) {
         $FallbackWarnings += (Select-String -Path $Log.FullName -Pattern "Log de red inaccesible").Count
