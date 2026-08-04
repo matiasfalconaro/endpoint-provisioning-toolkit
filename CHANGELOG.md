@@ -15,6 +15,8 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Captura de código de salida de procesos externos, además de excepciones de PowerShell.
 - Fallback de logging a ruta local cuando el servidor de logs no está disponible.
 - Suite de pruebas locales: Integra PSScriptAnalyzer, valida los escenarios del wrapper y normaliza codificación a UTF-8 con BOM.
+- Persistencia de logs de la suite de pruebas locales a SQLite.
+- Automatización de la preparación del entorno de desarrollo local.
 
 ### Changed
 - Mejora en selección de adaptador de red, excluyendo adaptadores virtuales/VPN/Hyper-V.
@@ -23,14 +25,16 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Se agrega `$ErrorActionPreference = 'Stop'` propio, para seguridad si se ejecuta fuera del wrapper.
 - Se agregan escenarios de regresión para propagación de errores en BIOS y para captura de exit code en DISM.
 - `.gitignore`: Se agrega `manifest.json`.
-- Amplía el Contexto 5 de `Test-DeploymentCompliance.Tests.ps1` para cubrir propiedades de registro y rutas de archivo que purgan.
-- Corrige contexto 4 en `Test-DeploymentCompliance.Tests.ps1`para exigir `AllSigned`, validar firma real y resolver DeploymentRoot via `-Data`
+- Amplía el Contexto 5 de testing para cubrir propiedades de registro y rutas de archivo que purgan.
+- Corrige contexto 4 de testingpara exigir `AllSigned`, validar firma real y resolver DeploymentRoot via `-Data`
 
 ### Fixed
 - El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.
 - Workflow CI: corrección en la detección de la primera generación de `manifest.json`.
 - Se elimina contraseña de Supervisor, guardado en NVRAM dejando que el script reportara éxito pese al fallo real.
 - Se arregla un fallo de DISM dejaba pasar el script como completado exitosamente sin registrar el error.
+- Se corrige la duplicación de líneas de log entre la captura de salida cruda del proceso (`RAWOUTPUT_*`) y el log real del wrapper al persistir a SQLite.
+- Se captura la salida completa (stdout) de cada test driver, evitando la pérdida silenciosa de detalle diagnóstico que antes nunca llegaba a ningún archivo de log.
 
 ---
 
