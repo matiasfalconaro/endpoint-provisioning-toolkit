@@ -2,8 +2,9 @@
 .SYNOPSIS
     Valida, configura y respalda las claves de BitLocker en Active Directory / Entra ID.
 .DESCRIPTION
-    Verifica los requisitos de dTPM 2.0, asigna el protector TPM, fuerza el respaldo 
-    de la clave de recuperación en AD DS y confirma el cifrado del volumen del sistema.
+    Verifica los requisitos de dTPM 2.0, asigna el protector TPM, fuerza el respaldo
+    de la clave de recuperación en AD DS y/o Microsoft Entra ID según el escenario de
+    unión del equipo, y confirma el cifrado del volumen del sistema.
 .EXAMPLE
     .\Enable-BitLockerValidation.ps1
 #>
@@ -39,13 +40,29 @@ try {
         $RecoveryProtector = Add-BitLockerKeyProtector -MountPoint $TargetDrive -RecoveryPasswordProtector
     }
 
-    # 5. Respaldado de la clave de recuperación en Active Directory DS
-    Write-Output "Respaldando clave de recuperación en Active Directory DS..."
-    $BackupResult = BackupToAADOrO365 -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId -ErrorAction SilentlyContinue
-    $BackupAD = Backup-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId
+    # 5. Respaldado de la clave de recuperación, según escenario de unión
+    $DsregStatus = dsregcmd /status
+    $IsAzureAdJoined = ($DsregStatus | Select-String "AzureAdJoined\s*:\s*YES")
+    $IsDomainJoined  = ($DsregStatus | Select-String "DomainJoined\s*:\s*YES")
 
-    if ($null -eq $BackupAD) {
-        throw "ALERTA DE SEGURIDAD: Falla al respaldar la clave de recuperación de BitLocker en Active Directory."
+    $BackupSucceeded = $false
+
+    if ($IsDomainJoined) {
+        Write-Output "Equipo unido a dominio On-Premise: respaldando clave en Active Directory DS..."
+        $BackupAD = Backup-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId -ErrorAction Stop
+        Write-Output "Clave respaldada exitosamente en Active Directory DS."
+        $BackupSucceeded = $true
+    }
+
+    if ($IsAzureAdJoined) {
+        Write-Output "Equipo unido a Microsoft Entra ID: respaldando clave en el directorio cloud..."
+        BackupToAAD-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId -ErrorAction Stop
+        Write-Output "Clave respaldada exitosamente en Microsoft Entra ID."
+        $BackupSucceeded = $true
+    }
+
+    if (-not $BackupSucceeded) {
+        throw "ALERTA DE SEGURIDAD: El equipo no está unido a Active Directory ni a Microsoft Entra ID. No se pudo respaldar la clave de recuperación de BitLocker en ningún directorio."
     }
 
     # 6. Activación final del cifrado si estaba suspendido o apagado
