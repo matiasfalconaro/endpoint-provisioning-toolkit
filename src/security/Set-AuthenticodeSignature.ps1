@@ -29,7 +29,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    # 1. Modo Validación de Firma (Pre-Execution Check)
+    # Modo Validación de Firma (Pre-Execution Check)
     if ($ValidateOnly) {
         Write-Output "Verificando firma Authenticode en: $ScriptPath..."
         $Signature = Get-AuthenticodeSignature -FilePath $ScriptPath -ErrorAction Stop
@@ -42,33 +42,54 @@ try {
         return $true
     }
 
-    # 2. Modo Firma de Scripts
+    # Modo Firma de Scripts
     if (-not $CertificateThumbprint) {
         throw "Debe proporcionar el parámetro -CertificateThumbprint para firmar digitalmente los scripts."
     }
 
+    if (-not (Test-Path -Path $ScriptPath)) {
+        throw "La ruta especificada no existe: $ScriptPath"
+    }
+
     $Cert = Get-Item -Path "Cert:\LocalMachine\My\$CertificateThumbprint" -ErrorAction SilentlyContinue
     if ($null -eq $Cert) {
-        $Cert = Get-Item -Path "Cert:\CurrentUser\My\$CertificateThumbprint" -ErrorAction Stop
+        $Cert = Get-Item -Path "Cert:\CurrentUser\My\$CertificateThumbprint" -ErrorAction SilentlyContinue
+    }
+    if ($null -eq $Cert) {
+        throw "No se encontró el certificado con Thumbprint '$CertificateThumbprint' en Cert:\LocalMachine\My ni en Cert:\CurrentUser\My."
     }
 
     Write-Output "Aplicando firma Authenticode con el certificado: $($Cert.Subject)..."
-    
+
     if (Test-Path -Path $ScriptPath -PathType Leaf) {
         $Status = Set-AuthenticodeSignature -FilePath $ScriptPath -Certificate $Cert -TimestampServer "http://timestamp.digicert.com"
         if ($Status.Status -ne 'Valid') {
             throw "Error al firmar el archivo '$ScriptPath': $($Status.StatusMessage)"
         }
-        Write-Output "Script firmando exitosamente: $ScriptPath"
+        Write-Output "Script firmado exitosamente: $ScriptPath"
     }
     elseif (Test-Path -Path $ScriptPath -PathType Container) {
         $Scripts = Get-ChildItem -Path $ScriptPath -Filter "*.ps1" -Recurse
+
+        if ($Scripts.Count -eq 0) {
+            Write-Warning "No se encontraron archivos .ps1 en: $ScriptPath"
+        }
+
+        $Failed = @()
         foreach ($Script in $Scripts) {
             $Status = Set-AuthenticodeSignature -FilePath $Script.FullName -Certificate $Cert -TimestampServer "http://timestamp.digicert.com"
             Write-Output "Firmado: $($Script.Name) -> $($Status.Status)"
+
+            if ($Status.Status -ne 'Valid') {
+                $Failed += "$($Script.Name) [$($Status.Status)]"
+            }
+        }
+
+        if ($Failed.Count -gt 0) {
+            throw "Fallo al firmar $($Failed.Count) de $($Scripts.Count) script(s): $($Failed -join '; ')"
         }
     }
 
 } catch {
-    throw "ERROR CRÍTICO EN AUTHERNTICODE SIGNING: $_"
+    throw "ERROR CRÍTICO EN AUTHENTICODE SIGNING: $_"
 }
