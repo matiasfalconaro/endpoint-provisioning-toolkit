@@ -12,10 +12,12 @@
 [CmdletBinding()]
 param()
 
-$ErrorActionPreference = 'Stop'
+function Invoke-TpmToolGetInfo {
+    tpmtool getdeviceinformation 2>$null
+}
 
 function Get-TpmAttestationCapability {
-    $TpmToolOutput = tpmtool getdeviceinformation 2>$null
+    $TpmToolOutput = Invoke-TpmToolGetInfo
     if (-not $TpmToolOutput) {
         return $null
     }
@@ -38,54 +40,56 @@ function Test-MeasuredBootLogPresent {
     return ($Logs.Count -gt 0)
 }
 
-try {
-    # Auditoría de Secure Boot
+function Invoke-BootAttestationStatus {
+    [CmdletBinding()]
+    param()
+
+    $ErrorActionPreference = 'Stop'
+
     try {
-        $SecureBootActive = Confirm-SecureBootUEFI
+        try {
+            $SecureBootActive = Confirm-SecureBootUEFI
+        } catch {
+            Write-Warning "No se pudo verificar Secure Boot: $($_.Exception.Message)"
+            $SecureBootActive = $null
+        }
+
+        $TpmInfo = Get-Tpm -ErrorAction SilentlyContinue
+        $AttestationCapability = Get-TpmAttestationCapability
+        $MeasuredBootLogPresent = Test-MeasuredBootLogPresent
+
+        $AttestationReport = [PSCustomObject]@{
+            SecureBootEnabled       = if ($null -ne $SecureBootActive) { $SecureBootActive } else { "No verificable / Deshabilitado" }
+            TpmPresent              = $TpmInfo.TpmPresent
+            TpmReady                = $TpmInfo.TpmReady
+            TpmEnabled              = $TpmInfo.TpmEnabled
+            TpmHasOwner             = $TpmInfo.TpmOwned
+            AutoProvisioning        = $TpmInfo.AutoProvisioning
+            AttestationCapable      = $AttestationCapability.IsCapableForAttestation
+            AttestationReady        = $AttestationCapability.ReadyForAttestation
+            MeasuredBootLogPresent  = $MeasuredBootLogPresent
+        }
+
+        if ($SecureBootActive -ne $true) {
+            throw "SEGURIDAD CRÍTICA: Secure Boot se encuentra DESHABILITADO o no pudo ser verificado en el firmware."
+        }
+
+        if (-not $TpmInfo.TpmReady) {
+            throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no está listo."
+        }
+
+        if ($AttestationCapability.IsCapableForAttestation -ne $true) {
+            throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no soporta Atestación de Hardware (Device Health Attestation)."
+        }
+
+        return $AttestationReport
+
     } catch {
-        Write-Warning "No se pudo verificar Secure Boot (posible Legacy BIOS o privilegios insuficientes): $($_.Exception.Message)"
-        $SecureBootActive = $null
+        throw "Falla durante la auditoría de Secure Boot y Measured Boot: $_"
     }
+}
 
-    # Auditoría de dTPM 2.0
-    $TpmInfo = Get-Tpm -ErrorAction SilentlyContinue
-
-    # Capacidad real de atestación (reemplaza el método inexistente IsCapPresent)
-    $AttestationCapability = Get-TpmAttestationCapability
-
-    # Verificación real de logs de Measured Boot
-    $MeasuredBootLogPresent = Test-MeasuredBootLogPresent
-
-    # Consolidación de Resultados
-    $AttestationReport = [PSCustomObject]@{
-        SecureBootEnabled       = if ($null -ne $SecureBootActive) { $SecureBootActive } else { "No verificable / Deshabilitado" }
-        TpmPresent              = $TpmInfo.TpmPresent
-        TpmReady                = $TpmInfo.TpmReady
-        TpmEnabled               = $TpmInfo.TpmEnabled
-        TpmHasOwner              = $TpmInfo.TpmOwned
-        AutoProvisioning         = $TpmInfo.AutoProvisioning
-        AttestationCapable       = $AttestationCapability.IsCapableForAttestation
-        AttestationReady         = $AttestationCapability.ReadyForAttestation
-        MeasuredBootLogPresent   = $MeasuredBootLogPresent
-    }
-
-    Write-Output ($AttestationReport | Format-List | Out-String)
-
-    # Evaluación de Criterios de Seguridad
-    if ($SecureBootActive -ne $true) {
-        throw "SEGURIDAD CRÍTICA: Secure Boot se encuentra DESHABILITADO o no pudo ser verificado en el firmware."
-    }
-
-    if (-not $TpmInfo.TpmReady) {
-        throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no está listo."
-    }
-
-    if ($AttestationCapability.IsCapableForAttestation -ne $true) {
-        throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no soporta Atestación de Hardware (Device Health Attestation)."
-    }
-
-    $AttestationReport
-
-} catch {
-    throw "Falla durante la auditoría de Secure Boot y Measured Boot: $_"
+# Guarda de invocación
+if ($MyInvocation.InvocationName -ne '.') {
+    Invoke-BootAttestationStatus
 }
