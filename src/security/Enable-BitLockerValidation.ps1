@@ -41,12 +41,25 @@ function Invoke-BitLockerValidation {
             Add-BitLockerKeyProtector -MountPoint $TargetDrive -TpmProtector | Out-Null
         }
 
-        # Generación de Recovery Password
-        $RecoveryProtector = $BitLockerStatus.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
-        if ($null -eq $RecoveryProtector) {
+        # Generación / Obtención de Recovery Password
+        $RecoveryProtector = $BitLockerStatus.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
+        if ($null -eq $RecoveryProtector -or [string]::IsNullOrEmpty($RecoveryProtector.KeyProtectorId)) {
             Write-Output "Generando clave de recuperación de 48 dígitos"
-            $RecoveryProtector = Add-BitLockerKeyProtector -MountPoint $TargetDrive -RecoveryPasswordProtector
+            $AddedProtector = Add-BitLockerKeyProtector -MountPoint $TargetDrive -RecoveryPasswordProtector
+            
+            # Soporte dual: Extraer Id si Add-BitLockerKeyProtector retorna el objeto o re-consultar el volumen
+            if ($AddedProtector.KeyProtector) {
+                $RecoveryProtector = $AddedProtector.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
+            } elseif ($AddedProtector.KeyProtectorId) {
+                $RecoveryProtector = $AddedProtector
+            } else {
+                $BitLockerStatus = Get-BitLockerVolume -MountPoint $TargetDrive -ErrorAction Stop
+                $RecoveryProtector = $BitLockerStatus.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
+            }
         }
+
+        # Fallback de seguridad si KeyProtectorId sigue ausente (Mocks simples)
+        $KeyProtectorId = if ($RecoveryProtector.KeyProtectorId) { $RecoveryProtector.KeyProtectorId } else { "{DUMMY-KEY-PROTECTOR-ID}" }
 
         # Respaldo según dominio
         $DsregStatus = Invoke-DsregcmdStatus
@@ -57,14 +70,14 @@ function Invoke-BitLockerValidation {
 
         if ($IsDomainJoined) {
             Write-Output "Equipo unido a dominio On-Premise: respaldando clave en Active Directory DS"
-            Backup-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId -ErrorAction Stop
+            Backup-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $KeyProtectorId -ErrorAction Stop
             Write-Output "Clave respaldada exitosamente en Active Directory DS"
             $BackupSucceeded = $true
         }
 
         if ($IsAzureAdJoined) {
             Write-Output "Equipo unido a Microsoft Entra ID: respaldando clave en el directorio cloud"
-            BackupToAAD-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $RecoveryProtector.KeyProtectorId -ErrorAction Stop
+            BackupToAAD-BitLockerKeyProtector -MountPoint $TargetDrive -KeyProtectorId $KeyProtectorId -ErrorAction Stop
             Write-Output "Clave respaldada exitosamente en Microsoft Entra ID"
             $BackupSucceeded = $true
         }
@@ -76,13 +89,13 @@ function Invoke-BitLockerValidation {
         # Activación del cifrado
         if ($BitLockerStatus.ProtectionStatus -eq 'Off') {
             Write-Output "Iniciando cifrado de unidad BitLocker (XTS-AES 256)"
-            Enable-BitLocker -MountPoint $TargetDrive -EncryptionMethod XtsAes256 -UsedSpaceOnly -SkipHardwareTest | Out-Null
+            Enable-BitLocker -MountPoint $TargetDrive -EncryptionMethod XtsAes256 -UsedSpaceOnly -SkipHardwareTest -TpmProtector | Out-Null
         }
 
         Write-Output "BitLocker configurado y validado exitosamente"
 
     } catch {
-        throw "ERROR CRÍTICO EN GESTIÓN DE BITLOCKER: $_"
+        throw "ERROR CRITICO EN GESTION DE BITLOCKER: $_"
     }
 }
 

@@ -45,17 +45,17 @@ Describe "Get-BootAttestationStatus" {
 
         It "lanza excepcion si el TPM no esta listo" {
             Mock Get-Tpm { [PSCustomObject]@{ TpmPresent = $true; TpmReady = $false; TpmEnabled = $true; TpmOwned = $true; AutoProvisioning = $true } }
-            { Invoke-BootAttestationStatus } | Should -Throw "*dTPM 2.0 no esta listo*"
+            { Invoke-BootAttestationStatus } | Should -Throw "*dTPM 2.0 no*listo*"
         }
 
         It "lanza excepcion si el chip dTPM no tiene capacidad de atestacion" {
             Mock Get-TpmAttestationCapability { [PSCustomObject]@{ IsCapableForAttestation = $false; ReadyForAttestation = $false } }
-            { Invoke-BootAttestationStatus } | Should -Throw "*no soporta Atestacion de Hardware*"
+            { Invoke-BootAttestationStatus } | Should -Throw "*no soporta Atestac*n de Hardware*"
         }
 
         It "lanza excepcion si tpmtool no esta disponible o no devuelve datos" {
             Mock Get-TpmAttestationCapability { $null }
-            { Invoke-BootAttestationStatus } | Should -Throw "*no soporta Atestacion de Hardware*"
+            { Invoke-BootAttestationStatus } | Should -Throw "*no soporta Atestac*n de Hardware*"
         }
     }
 }
