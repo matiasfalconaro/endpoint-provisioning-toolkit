@@ -98,14 +98,14 @@ if (Test-Path $UnitTestsPath) {
         $PesterConfig.TestResult.OutputFormat = 'NUnitXml'
 
         # Captura el output de Pester a archivo mientras lo muestra en consola
-        $PesterResult = Invoke-Pester -Configuration $PesterConfig -PassThru *>&1 |
-            Tee-Object -FilePath $PesterLogPath -Encoding utf8 |
+        $PesterResult = Invoke-Pester -Configuration $PesterConfig *>&1 |
+            Tee-Object -FilePath $PesterLogPath |
             Where-Object { $_ -is [Pester.Run] } |
             Select-Object -Last 1
 
         # Si Tee-Object mezcló el objeto resultado con el stream, recuperarlo del config
         if (-not $PesterResult -or -not $PesterResult.PSObject.Properties['FailedCount']) {
-            $PesterResult = Invoke-Pester -Configuration $PesterConfig -PassThru
+            $PesterResult = Invoke-Pester -Configuration $PesterConfig
         }
 
         $PesterPassed = ($PesterResult.FailedCount -eq 0)
