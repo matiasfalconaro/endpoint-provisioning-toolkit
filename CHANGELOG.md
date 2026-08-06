@@ -7,6 +7,27 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ---
 
+## [1.2.1] - 2026-07-28 - [main] - [Unreleased]
+
+### Added
+- Suites de pruebas unitarias con Pester v5.x y  Mocks para interceptar cmdlets sensibles del sistema.
+- Integración automática de la etapa de Pester Mocks dentro del orquestador previa a la ejecución de escenarios de integración (Test 0 a Test 8).
+- Declaración de stubs globales condicionales en tests unitarios para prevenir errores en entornos o agentes CI sin módulos RSAT/BitLocker cargados.
+
+### Changed
+- Refactorización y modularización de los 4 scripts de la capa de seguridad.
+- Inclusión de la guarda de invocación por dot-sourcing en todos los scripts de seguridad para permitir su importación segura en tests y su ejecución directa en la Task Sequence.
+- Cambio del parámetro superior para resolver el bloqueo por *prompt* interactivo durante el dot-sourcing.
+- 
+
+### Fixed
+- Corregido cmdlet de respaldo a MED y detección dinámica de tipo de directorio para la custodia de claves de BitLocker.
+- Agregada validación por polling con reintentos y timeouts para el registro asíncrono del servicio EDR en el onboarding de Defender.
+- Reemplazado método inexistente de atestación TPM por invocación y parsing estructurado, junto con la auditoría de logs de Measured Boot.
+- Garantizada la propagación estricta de errores en la firma Authenticode, deteniendo la ejecución ante fallos en lote de directorios o rutas inexistentes.
+
+---
+
 ## [1.2.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
