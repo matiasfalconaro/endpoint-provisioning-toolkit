@@ -83,35 +83,62 @@ $UnitTestsPath = Join-Path $PSScriptRoot "unit-tests"
 
 if (Test-Path $UnitTestsPath) {
     if (Get-Module -ListAvailable -Name Pester) {
-        Import-Module Pester -ErrorAction SilentlyContinue
-        
-        # Ejecución compatible con Pester v4 y v5
-        $PesterResult = Invoke-Pester -Path $UnitTestsPath -PassThru
-        
+        Import-Module Pester -MinimumVersion 5.0 -ErrorAction Stop
+
+        if (-not (Test-Path $FallbackLogDir)) {
+            New-Item -Path $FallbackLogDir -ItemType Directory -Force | Out-Null
+        }
+        $PesterLogPath = Join-Path $FallbackLogDir "RAWOUTPUT_Pester_UnitTests.log"
+
+        $PesterConfig = [PesterConfiguration]::Default
+        $PesterConfig.Run.Path = $UnitTestsPath
+        $PesterConfig.Output.Verbosity = 'Detailed'
+        $PesterConfig.TestResult.Enabled = $true
+        $PesterConfig.TestResult.OutputPath = Join-Path $PSScriptRoot "logs\pester-results.xml"
+        $PesterConfig.TestResult.OutputFormat = 'NUnitXml'
+
+        # Captura el output de Pester a archivo mientras lo muestra en consola
+        $PesterResult = Invoke-Pester -Configuration $PesterConfig -PassThru *>&1 |
+            Tee-Object -FilePath $PesterLogPath -Encoding utf8 |
+            Where-Object { $_ -is [Pester.Run] } |
+            Select-Object -Last 1
+
+        # Si Tee-Object mezcló el objeto resultado con el stream, recuperarlo del config
+        if (-not $PesterResult -or -not $PesterResult.PSObject.Properties['FailedCount']) {
+            $PesterResult = Invoke-Pester -Configuration $PesterConfig -PassThru
+        }
+
         $PesterPassed = ($PesterResult.FailedCount -eq 0)
         $script:Results += [PSCustomObject]@{
-            Test               = "Unit tests seguridad (Pester)"
-            ExpectedExitCode   = "0 fallidos"
-            ActualExitCode     = "$($PesterResult.FailedCount) fallidos"
-            LogPatternMatched  = "N/A"
-            Result             = if ($PesterPassed) { "PASS" } else { "FAIL" }
+            Test              = "Unit tests seguridad (Pester)"
+            ExpectedExitCode  = "0 fallidos"
+            ActualExitCode    = "$($PesterResult.FailedCount) fallidos de $($PesterResult.TotalCount)"
+            LogPatternMatched = "N/A"
+            Result            = if ($PesterPassed) { "PASS" } else { "FAIL" }
         }
 
         if (-not $PesterPassed) {
-            Write-Host "Se detectaron fallos en las pruebas unitarias de Pester." -ForegroundColor Red
+            Write-Host "Se detectaron $($PesterResult.FailedCount) fallo(s) en las pruebas unitarias." -ForegroundColor Red
         }
     } else {
-        Write-Host "[ADVERTENCIA] Módulo Pester no instalado. Omitiendo pruebas unitarias con Mocks." -ForegroundColor Yellow
+        Write-Host "[ADVERTENCIA] Modulo Pester no instalado. Omitiendo pruebas unitarias con Mocks." -ForegroundColor Yellow
         $script:Results += [PSCustomObject]@{
-            Test               = "Unit tests seguridad (Pester)"
-            ExpectedExitCode   = "N/A"
-            ActualExitCode     = "Módulo no presente"
-            LogPatternMatched  = "N/A"
-            Result             = "SKIPPED"
+            Test              = "Unit tests seguridad (Pester)"
+            ExpectedExitCode  = "N/A"
+            ActualExitCode    = "Modulo no presente"
+            LogPatternMatched = "N/A"
+            Result            = "SKIPPED"
         }
     }
 } else {
-    Write-Host "No se encontró el directorio de unit tests en: $UnitTestsPath" -ForegroundColor DarkGray
+    Write-Host "No se encontro el directorio de unit tests en: $UnitTestsPath" -ForegroundColor DarkGray
+    $script:Results += [PSCustomObject]@{
+        Test              = "Unit tests seguridad (Pester)"
+        ExpectedExitCode  = "N/A"
+        ActualExitCode    = "Directorio no encontrado"
+        LogPatternMatched = "N/A"
+        Result            = "SKIPPED"
+    }
 }
 
 # FUNCIÓN AUXILIAR DE PRUEBAS DE INTEGRACIÓN
