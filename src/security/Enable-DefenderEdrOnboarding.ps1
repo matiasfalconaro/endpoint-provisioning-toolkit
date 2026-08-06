@@ -28,8 +28,6 @@ param(
     [int]$SenseServiceTimeoutSeconds = 180
 )
 
-$ErrorActionPreference = 'Stop'
-
 function Invoke-OnboardingScript {
     param(
         [string]$Path,
@@ -57,7 +55,7 @@ function Invoke-OnboardingScript {
 
     if (-not $Finished) {
         try { $Process.Kill() } catch { }
-        throw "El proceso de onboarding no finalizó dentro de $TimeoutSeconds segundos (posible cuelgue). Proceso terminado forzosamente."
+        throw "El proceso de onboarding no finalizó dentro de $TimeoutSeconds segundos. Proceso terminado forzosamente."
     }
 
     if ($Process.ExitCode -ne 0) {
@@ -84,47 +82,64 @@ function Wait-SenseServiceRunning {
     return $false
 }
 
-try {
-    # Verificación y activación del motor Antivirus Defender
-    Write-Output "Verificando el estado de Microsoft Defender Antivirus..."
-    $DefenderStatus = Get-MpComputerStatus -ErrorAction Stop
+function Invoke-DefenderEdrOnboarding {
+    [CmdletBinding()]
+    param(
+        [string]$OnboardingScriptPath,
+        [int]$OnboardingTimeoutSeconds,
+        [int]$SenseServiceTimeoutSeconds
+    )
 
-    if (-not $DefenderStatus.RealTimeProtectionEnabled) {
-        Write-Output "Habilitando Protección en Tiempo Real..."
+    $ErrorActionPreference = 'Stop'
+
+    try {
+        Write-Output "Verificando el estado de Microsoft Defender Antivirus..."
+        $DefenderStatus = Get-MpComputerStatus -ErrorAction Stop
+
+        if (-not $DefenderStatus.RealTimeProtectionEnabled) {
+            Write-Output "Habilitando Protección en Tiempo Real..."
         # Nota: si Tamper Protection ya está activo, este comando puede fallar
         # por diseño de Microsoft. Si este script corre en una fase posterior
         # a la aplicación de la GPO de Tamper Protection, revisar el orden de
         # ejecución en la Task Sequence.
-        Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction Stop
-    }
-
-    if (-not $DefenderStatus.AntivirusEnabled) {
-        throw "SEGURIDAD CRÍTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
-    }
-
-    # Ejecución de Onboarding EDR / Defender for Endpoint (XDR)
-    $SenseService = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
-
-    if ($null -eq $SenseService -or $SenseService.Status -ne 'Running') {
-        if (-not (Test-Path -Path $OnboardingScriptPath)) {
-            throw "No se encontró el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
+            Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction Stop
         }
 
-        Write-Output "Ejecutando onboarding desatendido a Defender for Endpoint (EDR)..."
-        Invoke-OnboardingScript -Path $OnboardingScriptPath -TimeoutSeconds $OnboardingTimeoutSeconds
-    }
+        if (-not $DefenderStatus.AntivirusEnabled) {
+            throw "SEGURIDAD CRÍTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
+        }
+
+        # Ejecución de Onboarding EDR / Defender for Endpoint (XDR)
+        $SenseService = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
+
+        if ($null -eq $SenseService -or $SenseService.Status -ne 'Running') {
+            if (-not (Test-Path -Path $OnboardingScriptPath)) {
+                throw "No se encontró el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
+            }
+
+            Write-Output "Ejecutando onboarding desatendido a Defender for Endpoint (EDR)..."
+            Invoke-OnboardingScript -Path $OnboardingScriptPath -TimeoutSeconds $OnboardingTimeoutSeconds
+        }
 
     # Validar inicio y persistencia del servicio EDR (Sense), con reintentos
-    Set-Service -Name "Sense" -StartupType Automatic -ErrorAction SilentlyContinue
-    Start-Service -Name "Sense" -ErrorAction SilentlyContinue
+        Set-Service -Name "Sense" -StartupType Automatic -ErrorAction SilentlyContinue
+        Start-Service -Name "Sense" -ErrorAction SilentlyContinue
 
-    Write-Output "Esperando a que el servicio Sense (EDR) quede operativo (hasta $SenseServiceTimeoutSeconds s)..."
-    if (-not (Wait-SenseServiceRunning -TimeoutSeconds $SenseServiceTimeoutSeconds)) {
-        throw "ALERTA DE SEGURIDAD: El servicio EDR (Sense) no reportó estado 'Running' dentro de $SenseServiceTimeoutSeconds segundos."
+        Write-Output "Esperando a que el servicio Sense (EDR) quede operativo..."
+        if (-not (Wait-SenseServiceRunning -TimeoutSeconds $SenseServiceTimeoutSeconds)) {
+            throw "ALERTA DE SEGURIDAD: El servicio EDR (Sense) no reportó estado 'Running' dentro de $SenseServiceTimeoutSeconds segundos."
+        }
+
+        Write-Output "Microsoft Defender Antivirus y EDR (Sense) validados y activos."
+
+    } catch {
+        throw "ERROR CRÍTICO EN ONBOARDING DEFENDER/EDR: $_"
     }
+}
 
-    Write-Output "Microsoft Defender Antivirus y EDR (Sense) validados y activos. Dispositivo enrolado en Defender XDR."
-
-} catch {
-    throw "ERROR CRÍTICO EN ONBOARDING DEFENDER/EDR: $_"
+# Guarda de invocación
+if ($MyInvocation.InvocationName -ne '.') {
+    Invoke-DefenderEdrOnboarding -OnboardingScriptPath $OnboardingScriptPath `
+                                 -OnboardingTimeoutSeconds $OnboardingTimeoutSeconds `
+                                 -SenseServiceTimeoutSeconds $SenseServiceTimeoutSeconds
 }
