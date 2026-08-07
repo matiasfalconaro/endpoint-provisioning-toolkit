@@ -17,6 +17,9 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Suite de pruebas locales: Integra PSScriptAnalyzer, valida los escenarios del wrapper y normaliza codificación a UTF-8 con BOM.
 - Persistencia de logs de la suite de pruebas locales a SQLite.
 - Automatización de la preparación del entorno de desarrollo local.
+- Incorpora test para la auditoría de salud de hardware y borrado seguro de discos.
+- Nueva suite de pruebas unitarias Pester v6 con soporte para Mocks y Stubs de cmdlets nativos.
+- Validación de escenarios de filtrado exacto, fallos parciales con ejecución continua y omisión de paquetes no listados.
 
 ### Changed
 - Mejora en selección de adaptador de red, excluyendo adaptadores virtuales/VPN/Hyper-V.
@@ -27,6 +30,13 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - `.gitignore`: Se agrega `manifest.json`.
 - Amplía el Contexto 5 de testing para cubrir propiedades de registro y rutas de archivo que purgan.
 - Corrige contexto 4 de testingpara exigir `AllSigned`, validar firma real y resolver DeploymentRoot via `-Data`
+- Se refactorizó la evaluación de desgaste de almacenamiento para tratar de forma indeterminada la falta de contadores de confiabilidad.
+- Se hizo opcional la obligatoriedad del parámetro en el script raíz `Invoke-LenovoDriveWipe.ps1`.
+- Encapsulamiento de la lógica e inclusión de guarda de invocación para habilitar dot-sourcing sin ejecución automática.
+- Sustitución de `@($ProvisionedApps).Count` para garantizar la coerción a array y evitar evaluadores escalares vacíos en PowerShell 5.1.
+- Eliminación de la combinación silenciosa `-ErrorAction SilentlyContinue | Out-Null`, reemplazándola por `-ErrorAction Stop` y manejo de excepciones explícito en cada paquete.
+- Implementación de un patrón de acumulación de fallos, permitiendo intentar la eliminación de todos los paquetes independientes de bloatware antes de lanzar un error consolidado.
+- Prevencion de ejecuciones no controladas fuera del wrapper de orquestación.
 
 ### Fixed
 - El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.

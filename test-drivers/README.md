@@ -8,13 +8,13 @@ Para:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\test-drivers\Run-AllTests.ps1
 ```
 
-Nota sobre el Test 1:
+Nota sobre el test1:
 Es normal que falle si existen cambios pendientes de registrar en manifest.json. En CI se resuelve automáticamente al mergear a main. Para forzar el paso local antes de un commit:
 ```
 .\src\security\Confirm-ScriptIntegrity.ps1 -Action Generate -ManifestPath .\manifest.json
 ```
 
-Nota sobre el Test 6:
+Nota sobre el test6:
 "PASS" confirma que el mock buggy sigue reproduciendo el bug histórico (ExitCode: 0 ante falla real). Es una prueba de regresión; la corrección efectiva se valida en el Test 7.
 
 ## Calidad y Reglas de Código
