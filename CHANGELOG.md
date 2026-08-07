@@ -10,16 +10,17 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 ## [1.2.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
-- CI Pipeline: se añade workflow con PSScriptAnalyzer para validación estática y generación automática de `manifest.json`.
+- Se añade workflow con PSScriptAnalyzer para validación estática y generación automática de `manifest.json`.
 - Validación de integridad SHA-256 y firma Authenticode del script invocado antes de cederle el control, con bypass explícito.
 - Captura de código de salida de procesos externos, además de excepciones de PowerShell.
 - Fallback de logging a ruta local cuando el servidor de logs no está disponible.
-- Suite de pruebas locales: Integra PSScriptAnalyzer, valida los escenarios del wrapper y normaliza codificación a UTF-8 con BOM.
+- Integra PSScriptAnalyzer, valida los escenarios del wrapper y normaliza codificación a UTF-8 con BOM.
 - Persistencia de logs de la suite de pruebas locales a SQLite.
 - Automatización de la preparación del entorno de desarrollo local.
 - Incorpora test para la auditoría de salud de hardware y borrado seguro de discos.
 - Nueva suite de pruebas unitarias Pester v6 con soporte para Mocks y Stubs de cmdlets nativos.
 - Validación de escenarios de filtrado exacto, fallos parciales con ejecución continua y omisión de paquetes no listados.
+- Suite de pruebas que valida la detección de chasis (Laptop/Desktop) y el manejo de errores de `powercfg`.
 
 ### Changed
 - Mejora en selección de adaptador de red, excluyendo adaptadores virtuales/VPN/Hyper-V.
@@ -37,6 +38,7 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Eliminación de la combinación silenciosa `-ErrorAction SilentlyContinue | Out-Null`, reemplazándola por `-ErrorAction Stop` y manejo de excepciones explícito en cada paquete.
 - Implementación de un patrón de acumulación de fallos, permitiendo intentar la eliminación de todos los paquetes independientes de bloatware antes de lanzar un error consolidado.
 - Prevencion de ejecuciones no controladas fuera del wrapper de orquestación.
+- Control explícito de errores para capturar códigos de salida fallidos de `powercfg`.
 
 ### Fixed
 - El aviso de fallback de logging ahora se persiste en el archivo de log, no solo en consola.
