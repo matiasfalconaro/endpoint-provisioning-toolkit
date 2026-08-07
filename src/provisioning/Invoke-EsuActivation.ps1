@@ -12,49 +12,72 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la clave de producto ESU corporativa")]
-    [ValidatePattern('^[A-Z0-9]{5}(-[A-Z0-9]{5}){4}$')]
+    [Parameter(Mandatory = $false)]
     [string]$EsuProductKey
 )
 
-$ErrorActionPreference = 'Stop'
+function Invoke-EsuLicenseActivation {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[A-Z0-9]{5}(-[A-Z0-9]{5}){4}$')]
+        [string]$EsuProductKey
+    )
 
-try {
-    # 1. Obtención del servicio de licenciamiento de Windows (SoftwareLicensingService)
-    $LicensingService = Get-CimInstance -ClassName "SoftwareLicensingService" -ErrorAction Stop
-    
-    if ($null -eq $LicensingService) {
-        throw "No se pudo acceder al servicio CIM SoftwareLicensingService."
+    $ErrorActionPreference = 'Stop'
+
+    try {
+        # Verificar que el servicio existe antes de intentar invocarlo
+        $LicensingService = Get-CimInstance -ClassName "SoftwareLicensingService" -ErrorAction Stop
+        if ($null -eq $LicensingService) {
+            throw "No se pudo acceder al servicio CIM SoftwareLicensingService."
+        }
+
+        Write-Output "Inyectando clave de producto ESU..."
+        $InstallResult = Invoke-CimMethod -ClassName "SoftwareLicensingService" `
+            -MethodName "InstallProductKey" `
+            -Arguments @{ ProductKey = $EsuProductKey }
+
+        if ($null -eq $InstallResult -or $InstallResult.ReturnValue -ne 0) {
+            throw "Falla al instalar la clave de producto ESU. ReturnValue: $($InstallResult.ReturnValue)"
+        }
+
+        Write-Output "Forzando activacion en linea de la licencia ESU..."
+        $EsuProducts = Get-CimInstance -ClassName "SoftwareLicensingProduct" |
+            Where-Object {
+                $_.PartialProductKey -and
+                $_.ApplicationId -eq "55c92734-d682-4d71-983e-d6ec3f16059f" -and
+                $_.LicenseIsAddon -eq $true
+            }
+
+        $EsuProduct = if ($EsuProducts) { $EsuProducts[0] } else { $null }
+
+        if ($null -ne $EsuProduct) {
+            $ActivateResult = Invoke-CimMethod -InputObject $EsuProduct -MethodName "Activate"
+            if ($ActivateResult.ReturnValue -ne 0) {
+                throw "Falla al activar el producto ESU. ReturnValue: $($ActivateResult.ReturnValue)"
+            }
+        } else {
+            throw "No se encontro el producto ESU en SoftwareLicensingProduct tras la inyeccion de clave."
+        }
+
+        $ActivatedProduct = Get-CimInstance -ClassName "SoftwareLicensingProduct" |
+            Where-Object { $_.LicenseStatus -eq 1 -and $_.PartialProductKey }
+
+        if ($null -eq $ActivatedProduct) {
+            throw "Error de Validacion ESU: LicenseStatus = 1 no reportado tras la inyeccion."
+        }
+
+        Write-Output "Licencia ESU inyectada y activada exitosamente. Estado: Licensed (1)."
+
+    } catch {
+        throw "ERROR CRITICO EN ACTIVACION ESU: $_"
     }
+}
 
-    # 2. Inyección de la clave de producto ESU
-    Write-Output "Inyectando clave de producto ESU..."
-    $InstallResult = Invoke-CimMethod -InputObject $LicensingService -MethodName "InstallProductKey" -Arguments @{ ProductKey = $EsuProductKey }
-
-    if ($null -eq $InstallResult) {
-        throw "Falla al ejecutar el método InstallProductKey en SoftwareLicensingService."
-    }
-
-    # 3. Forzado de activación del producto
-    Write-Output "Forzando activación en línea de la licencia ESU..."
-    $EsuProduct = Get-CimInstance -ClassName "SoftwareLicensingProduct" | Where-Object { $_.PartialProductKey -and $_.ApplicationId -eq "55c92734-d682-4d71-983e-d6ec3f16059f" -and $_.LicenseIsAddon -eq $true } | Select-Object -First 1
-
-    if ($null -ne $EsuProduct) {
-        Invoke-CimMethod -InputObject $EsuProduct -MethodName "Activate" | Out-Null
-    } else {
-        # Fallback a la llamada de activación general del servicio
-        Invoke-CimMethod -InputObject $LicensingService -MethodName "RefreshLicenseStatus" | Out-Null
-    }
-
-    # 4. Validación de estado de licenciamiento ESU
-    $ActivatedProduct = Get-CimInstance -ClassName "SoftwareLicensingProduct" | Where-Object { $_.LicenseStatus -eq 1 -and $_.PartialProductKey }
-
-    if ($null -eq $ActivatedProduct) {
-        throw "Error de Validación ESU: El sistema no reporta un estado de licencia activo (LicenseStatus = 1) tras la inyección."
-    }
-
-    Write-Output "Licencia ESU inyectada y activada exitosamente. Estado de licencia: Licensed (1)."
-
-} catch {
-    throw "ERROR CRÍTICO EN ACTIVACIÓN ESU: $_"
+# Guarda de invocacion
+if ($MyInvocation.MyCommand.CommandType -eq 'ExternalScript' -and
+    $MyInvocation.InvocationName -notlike '*BeforeAll*' -and
+    -not ($MyInvocation.Line -match '^\s*\.')) {
+    Invoke-EsuLicenseActivation -EsuProductKey $EsuProductKey
 }
