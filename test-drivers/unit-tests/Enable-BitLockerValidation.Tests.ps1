@@ -1,18 +1,20 @@
 BeforeAll {
-    # GUARDA DE SEGURIDAD
-    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
-        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
-        return
-    }
-
-    # Asegura que Pester pueda declarar Mocks incluso en entornos sin el módulo BitLocker/RSAT cargado
+    # Carga condicional del stub para stubs/mocks RSAT
     if (-not (Get-Command 'BackupToAAD-BitLockerKeyProtector' -ErrorAction SilentlyContinue)) {
         function global:BackupToAAD-BitLockerKeyProtector {}
     }
+
     . "$PSScriptRoot\..\..\src\security\Enable-BitLockerValidation.ps1"
 }
 
 Describe "Invoke-BitLockerValidation" {
+
+    # GUARDA DE SEGURIDAD: Ubicada DENTRO de Describe
+    BeforeEach {
+        if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+            Set-ItResult -Skipped -Because "Prueba peligrosa omitida por guarda de seguridad."
+        }
+    }
 
     Context "Equipo On-Premise (solo dominio)" {
         BeforeEach {

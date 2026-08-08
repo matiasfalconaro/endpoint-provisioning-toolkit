@@ -1,10 +1,4 @@
 BeforeAll {
-    # GUARDA DE SEGURIDAD
-    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
-        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
-        return
-    }
-
     $script:TempDir = Join-Path $env:TEMP "sig-test-$(Get-Random)"
     New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 

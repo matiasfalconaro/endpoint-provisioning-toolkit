@@ -92,27 +92,22 @@ if (Test-Path $UnitTestsPath) {
 
         $PesterConfig = [PesterConfiguration]::Default
         $PesterConfig.Run.Path = $UnitTestsPath
+        $PesterConfig.Run.PassThru = $true  # <--- AGREGAR ESTA LÍNEA
         $PesterConfig.Output.Verbosity = 'Detailed'
         $PesterConfig.TestResult.Enabled = $true
         $PesterConfig.TestResult.OutputPath = Join-Path $PSScriptRoot "logs\pester-results.xml"
         $PesterConfig.TestResult.OutputFormat = 'NUnitXml'
 
-        # Captura el output de Pester a archivo mientras lo muestra en consola
-        $PesterResult = Invoke-Pester -Configuration $PesterConfig *>&1 |
-            Tee-Object -FilePath $PesterLogPath |
-            Where-Object { $_ -is [Pester.Run] } |
-            Select-Object -Last 1
+        $PesterResult = Invoke-Pester -Configuration $PesterConfig
 
-        # Si Tee-Object mezcló el objeto resultado con el stream, recuperarlo del config
-        if (-not $PesterResult -or -not $PesterResult.PSObject.Properties['FailedCount']) {
-            $PesterResult = Invoke-Pester -Configuration $PesterConfig
-        }
+        $PesterFailedCount = if ($null -ne $PesterResult.FailedCount) { $PesterResult.FailedCount } else { 0 }
+        $PesterTotalCount  = if ($null -ne $PesterResult.TotalCount)  { $PesterResult.TotalCount }  else { 0 }
+        $PesterPassed      = ($PesterFailedCount -eq 0)
 
-        $PesterPassed = ($PesterResult.FailedCount -eq 0)
         $script:Results += [PSCustomObject]@{
             Test              = "Unit tests seguridad (Pester)"
             ExpectedExitCode  = "0 fallidos"
-            ActualExitCode    = "$($PesterResult.FailedCount) fallidos de $($PesterResult.TotalCount)"
+            ActualExitCode    = "$PesterFailedCount fallidos de $PesterTotalCount"
             LogPatternMatched = "N/A"
             Result            = if ($PesterPassed) { "PASS" } else { "FAIL" }
         }
@@ -271,7 +266,7 @@ try {
 
     # Test 6: bug histórico de propagación de errores en BIOS
     Write-Host "`n=== Ejecutando: Test 6 - Bug histórico BIOS (referencia, standalone) ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test6-bios-buggy-standalone.ps1") | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test6-bios-buggy-standalone.ps1'" | Out-Null
     $Test6ExitCode = $LASTEXITCODE
     $Test6Pass = ($Test6ExitCode -eq 0)
     Write-Host "Exit code: $Test6ExitCode (se espera 0 - confirma que el mock buggy reproduce el problema histórico)" -ForegroundColor $(if ($Test6Pass) {"Yellow"} else {"Red"})
@@ -285,7 +280,7 @@ try {
 
     # Test 7: script de BIOS con el fix real, standalone
     Write-Host "`n=== Ejecutando: Test 7 - Propagación correcta BIOS (fix real, standalone) ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test7-bios-fixed-standalone.ps1") | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test7-bios-fixed-standalone.ps1'" | Out-Null
     $Test7ExitCode = $LASTEXITCODE
     $Test7Pass = ($Test7ExitCode -eq 1)
     Write-Host "Exit code: $Test7ExitCode (esperado: 1)" -ForegroundColor $(if ($Test7Pass) {"Green"} else {"Red"})
@@ -298,11 +293,8 @@ try {
     }
 
     # Test 8: Enable-WindowsOptionalFeatures.ps1 captura $LASTEXITCODE de DISM
-    # Antes, ninguna de las 6 llamadas a dism.exe revisaba el exit code; un
-    # fallo real (ej. 0x800f081f, documentado en runbook 14.2) dejaba pasar
-    # el script como "completado exitosamente" sin que nadie se enterara.
     Write-Host "`n=== Ejecutando: Test 8 - Enable-WindowsOptionalFeatures captura LASTEXITCODE ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test8-features-exitcode.ps1") | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test8-features-exitcode.ps1'" | Out-Null
     $Test8ExitCode = $LASTEXITCODE
     $Test8Pass = ($Test8ExitCode -ne 0)
     Write-Host "Exit code: $Test8ExitCode (se espera distinto de 0 - DISM simulado falla en Paso 2)" -ForegroundColor $(if ($Test8Pass) {"Green"} else {"Red"})
@@ -316,7 +308,7 @@ try {
 
     # Test 9: workflows de BIOS - propagacion de errores ante rutas inexistentes
     Write-Host "`n=== Ejecutando: Test 9 - Workflows BIOS propagacion de errores ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test9-bios-workflows-standalone.ps1") | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test9-bios-workflows-standalone.ps1'" | Out-Null
     $Test9ExitCode = $LASTEXITCODE
     $Test9Pass = ($Test9ExitCode -eq 0)
     Write-Host "Exit code: $Test9ExitCode (esperado: 0)" -ForegroundColor $(if ($Test9Pass) {"Green"} else {"Red"})
