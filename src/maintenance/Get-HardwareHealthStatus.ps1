@@ -13,48 +13,62 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-try {
-    # 1. Auditoría de BIOS y Firmware
-    $BiosInfo = Get-CimInstance -ClassName Win32_BIOS
-    $SystemInfo = Get-CimInstance -ClassName Win32_ComputerSystemProduct
+function Invoke-HardwareHealthAudit {
+    [CmdletBinding()]
+    param()
 
-    # 2. Auditoría de Salud de Disco (Storage / SSD S.M.A.R.T.)
-    $PhysicalDisk = Get-PhysicalDisk | Where-Object { $_.BusType -in @('NVMe', 'SATA', 'SSD') } | Select-Object -First 1
-    
-    if ($null -eq $PhysicalDisk) {
-        throw "No se detectó una unidad de almacenamiento SSD/NVMe válida en el sistema."
-    }
+    $ErrorActionPreference = 'Stop'
 
-    $DiskHealth = Get-StorageReliabilityCounter -PhysicalDisk $PhysicalDisk -ErrorAction SilentlyContinue
+    try {
+        $BiosInfo   = Get-CimInstance -ClassName Win32_BIOS
+        $SystemInfo = Get-CimInstance -ClassName Win32_ComputerSystemProduct
 
-    # 3. Auditoría de Batería (Lenovo WMI / CIM Power)
-    $Battery = Get-CimInstance -Namespace "root\cimv2" -ClassName "Win32_Battery" -ErrorAction SilentlyContinue
-    $LenovoBattery = Get-CimInstance -Namespace "root\wmi" -ClassName "Lenovo_BatteryInformation" -ErrorAction SilentlyContinue
+        $PhysicalDisk = Get-PhysicalDisk |
+            Where-Object { $_.BusType -in @('NVMe', 'SATA') } |
+            Select-Object -First 1
 
-    # Consolidación de Resultados
-    $HealthReport = [PSCustomObject]@{
-        ComputerModel       = $SystemInfo.Version
-        SerialNumber        = $SystemInfo.IdentifyingNumber
-        BIOSVersion         = $BiosInfo.SMBIOSBIOSVersion
-        DiskModel           = $PhysicalDisk.Model
-        DiskHealthStatus    = $PhysicalDisk.HealthStatus
-        DiskWearPercentage  = if ($DiskHealth) { $DiskHealth.Wear } else { "N/A" }
-        TemperatureCelsius  = if ($DiskHealth) { $DiskHealth.Temperature } else { "N/A" }
-        BatteryStatus       = if ($Battery) { $Battery.Status } else { "N/A" }
-        BatteryCycleCount   = if ($LenovoBattery) { $LenovoBattery.CycleCount } else { "N/A" }
-    }
+        if ($null -eq $PhysicalDisk) {
+            throw "No se detecto una unidad de almacenamiento NVMe/SATA valida en el sistema."
+        }
 
-    # Formateo de salida para el Wrapper / Consola
-    Write-Output ($HealthReport | Format-List | Out-String)
+        $DiskHealth = Get-StorageReliabilityCounter -PhysicalDisk $PhysicalDisk -ErrorAction SilentlyContinue
 
-    # Evaluación de Umbrales Críticos para la Task Sequence
-    if ($PhysicalDisk.HealthStatus -ne 'Unhealthy' -and ($null -eq $DiskHealth -or $DiskHealth.Wear -lt 90)) {
-        # Hardware en estado saludable
+        $Battery       = Get-CimInstance -Namespace "root\cimv2" -ClassName "Win32_Battery"          -ErrorAction SilentlyContinue
+        $LenovoBattery = Get-CimInstance -Namespace "root\wmi"   -ClassName "Lenovo_BatteryInformation" -ErrorAction SilentlyContinue
+
+        $HealthReport = [PSCustomObject]@{
+            ComputerModel      = $SystemInfo.Version
+            SerialNumber       = $SystemInfo.IdentifyingNumber
+            BIOSVersion        = $BiosInfo.SMBIOSBIOSVersion
+            DiskModel          = $PhysicalDisk.Model
+            DiskHealthStatus   = $PhysicalDisk.HealthStatus
+            DiskWearPercentage = if ($DiskHealth) { $DiskHealth.Wear } else { $null }
+            TemperatureCelsius = if ($DiskHealth) { $DiskHealth.Temperature } else { $null }
+            BatteryStatus      = if ($Battery)       { $Battery.Status }           else { "N/A" }
+            BatteryCycleCount  = if ($LenovoBattery) { $LenovoBattery.CycleCount } else { "N/A" }
+        }
+
+        Write-Host ($HealthReport | Format-List | Out-String) -ForegroundColor Cyan
+
+        # Evaluacion de umbrales criticos
+        if ($PhysicalDisk.HealthStatus -eq 'Unhealthy') {
+            throw "ALERTA DE HARDWARE: El almacenamiento ($($PhysicalDisk.Model)) reporta estado 'Unhealthy'."
+        }
+
+        if ($null -eq $DiskHealth) {
+            Write-Warning "No se pudieron obtener datos S.M.A.R.T. de Get-StorageReliabilityCounter. El estado de desgaste del disco es INDETERMINADO."
+        } elseif ($DiskHealth.Wear -ge 90) {
+            throw "ALERTA DE HARDWARE: El almacenamiento ($($PhysicalDisk.Model)) presenta desgaste critico: $($DiskHealth.Wear)%."
+        }
+
         return $HealthReport
-    } else {
-        throw "ALERTA DE HARDWARE: El almacenamiento SSD ($($PhysicalDisk.Model)) presenta un desgaste crítico ($($DiskHealth.Wear)%) o estado Unhealthy."
-    }
 
-} catch {
-    throw "Falla al evaluar la salud del hardware: $_"
+    } catch {
+        throw "Falla al evaluar la salud del hardware: $_"
+    }
+}
+
+# Guarda de invocacion
+if ($MyInvocation.InvocationName -ne '.') {
+    Invoke-HardwareHealthAudit
 }

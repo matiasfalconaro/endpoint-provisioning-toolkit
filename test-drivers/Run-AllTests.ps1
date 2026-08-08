@@ -314,6 +314,20 @@ try {
         Result            = if ($Test8Pass) { "PASS" } else { "FAIL" }
     }
 
+    # Test 9: workflows de BIOS - propagacion de errores ante rutas inexistentes
+    Write-Host "`n=== Ejecutando: Test 9 - Workflows BIOS propagacion de errores ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test9-bios-workflows-standalone.ps1") | Out-Null
+    $Test9ExitCode = $LASTEXITCODE
+    $Test9Pass = ($Test9ExitCode -eq 0)
+    Write-Host "Exit code: $Test9ExitCode (esperado: 0)" -ForegroundColor $(if ($Test9Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 9 - Workflows BIOS propagacion de errores"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test9ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test9Pass) { "PASS" } else { "FAIL" }
+    }
+
 } finally {
     # Restauración garantizada del manifiesto real
     if (Test-Path $ManifestBackupPath) {

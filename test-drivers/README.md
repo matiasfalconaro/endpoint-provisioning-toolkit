@@ -29,7 +29,7 @@ Es normal que falle si existen cambios pendientes de registrar en manifest.json.
 .\src\security\Confirm-ScriptIntegrity.ps1 -Action Generate -ManifestPath .\manifest.json
 ```
 
-Nota sobre el Test 6:
+Nota sobre el test6:
 "PASS" confirma que el mock buggy sigue reproduciendo el bug histórico (ExitCode: 0 ante falla real). Es una prueba de regresión; la corrección efectiva se valida en el Test 7.
 
 ## Calidad y Reglas de Código
