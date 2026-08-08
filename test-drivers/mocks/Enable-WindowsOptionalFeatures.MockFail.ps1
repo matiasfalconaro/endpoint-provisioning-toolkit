@@ -13,6 +13,13 @@ param(
     [string]$TargetDrive = "C:\"
 )
 
+# GUARDA DE SEGURIDAD
+if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+    Write-Warning "El test/mock [$($MyInvocation.MyCommand.Name)] está deshabilitado por guarda de seguridad."
+    Write-Host "Para forzar su ejecución establece: `$env:ALLOW_HAZARDOUS_TESTS='true'" -ForegroundColor Yellow
+    exit 0
+}
+
 $ErrorActionPreference = 'Stop'
 
 function Invoke-DismStep {

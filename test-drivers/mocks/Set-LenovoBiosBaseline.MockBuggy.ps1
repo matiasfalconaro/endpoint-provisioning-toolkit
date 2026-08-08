@@ -1,4 +1,3 @@
-powershell
 <#
 .SYNOPSIS
     Mock de Set-LenovoBiosBaseline.ps1 que reproduce el bug histórico de
@@ -34,6 +33,13 @@ param(
     [Parameter(Mandatory = $true)]
     [System.Security.SecureString]$BiosPassword
 )
+
+# GUARDA DE SEGURIDAD
+if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+    Write-Warning "El test/mock [$($MyInvocation.MyCommand.Name)] está deshabilitado por guarda de seguridad."
+    Write-Host "Para forzar su ejecución establece: `$env:ALLOW_HAZARDOUS_TESTS='true'" -ForegroundColor Yellow
+    exit 0
+}
 
 # Intencionalmente SIN $ErrorActionPreference = 'Stop'
 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
