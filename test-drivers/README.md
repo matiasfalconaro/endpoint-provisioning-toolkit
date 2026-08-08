@@ -55,3 +55,5 @@ Nota sobre el test6:
 |Test 6     |Bug Histórico BIOS — Propagación (referencia)       |PASS (ExitCode: 0)              |
 |Test 7     |Fix BIOS — Propagación Correcta (standalone)        |PASS (ExitCode: 1)              |
 |Test 8     |Features DISM — Captura de Exit Code                |PASS (ExitCode ≠ 0)             |
+|Test 9     |Workflows BIOS — Propagación ante Rutas Inexistentes|PASS (ExitCode: 0)              |
+|Test 10    |Performance — Excepción CIM Terminante              |PASS (ExitCode: 0)              |
