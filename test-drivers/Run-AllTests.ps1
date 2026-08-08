@@ -1,24 +1,22 @@
 <#
 .SYNOPSIS
     Orquesta la batería completa de pruebas locales para Invoke-DeploymentTask.ps1,
-    Confirm-ScriptIntegrity.ps1 y Set-LenovoBiosBaseline.ps1, con auditoría de
-    linter y verificación opcional de codificación BOM.
+    Confirm-ScriptIntegrity.ps1, scripts hardware/BIOS y la suite de unit tests con Pester.
 .DESCRIPTION
     1. (Opcional, vía -FixEncoding) Normaliza recursivamente los archivos .ps1 en
-       src/ a UTF-8 con BOM para PowerShell 5.1. No se ejecuta por defecto.
+       src/ a UTF-8 con BOM para PowerShell 5.1.
     2. Ejecuta PSScriptAnalyzer sobre la carpeta src/ para verificar calidad de código.
-    3. Ejecuta los 8 escenarios de test-drivers/ (Test 0 a Test 7) como procesos
-       hijos aislados, incluyendo los tests de propagación de errores en BIOS
-       (Test 6/7), que corren en aislamiento total sin pasar por el wrapper.
-    4. Compara exit code y logs, restaura manifest.json y muestra un resumen
-       general PASS/FAIL.
+    3. Ejecuta los unit tests con Pester + Mock para los scripts de seguridad y hardware
+       ubicados en test-drivers/unit-tests/.
+    4. Ejecuta los escenarios de integración de test-drivers/ (Test 0 a Test 8) como procesos
+       hijos aislados.
+    5. Compara exit code y logs, restaura manifest.json y muestra un resumen general PASS/FAIL.
 .PARAMETER RepoRoot
     Raíz del repositorio. Si se omite, se resuelve automáticamente en base a
     la ubicación de este script.
 .PARAMETER FixEncoding
     Si se especifica, normaliza todos los .ps1 de src/ a UTF-8 con BOM antes
-    de correr los tests. No es automático: correr el orquestador sin este
-    switch no modifica ningún archivo del repositorio.
+    de correr los tests.
 .EXAMPLE
     .\test-drivers\Run-AllTests.ps1
 .EXAMPLE
@@ -48,7 +46,7 @@ $FallbackLogDir = "C:\Windows\Temp\DeploymentLogs"
 $SrcPath = Join-Path $RepoRoot "src"
 $Results = @()
 
-# ETAPA PREVIA: NORMALIZACIÓN DE ENCODING (opt-in, no automática)
+# ETAPA PREVIA 1: NORMALIZACIÓN DE ENCODING (opt-in)
 if ($FixEncoding) {
     Write-Host "=== Etapa Previa 1: Verificando/Aplicando UTF-8 con BOM en scripts ===" -ForegroundColor Cyan
     if (Test-Path $SrcPath) {
@@ -63,7 +61,7 @@ if ($FixEncoding) {
     Write-Host "=== Etapa Previa 1: Normalización de encoding OMITIDA (usar -FixEncoding para aplicarla) ===" -ForegroundColor DarkGray
 }
 
-# ETAPA PREVIA: AUDITORÍA DE LINTER
+# ETAPA PREVIA 2: AUDITORÍA DE LINTER
 Write-Host "`n=== Etapa Previa 2: Análisis estático con PSScriptAnalyzer ===" -ForegroundColor Cyan
 if (Get-Module -ListAvailable -Name PSScriptAnalyzer) {
     Import-Module PSScriptAnalyzer -ErrorAction SilentlyContinue
@@ -79,7 +77,71 @@ if (Get-Module -ListAvailable -Name PSScriptAnalyzer) {
     Write-Host "[ADVERTENCIA] Módulo PSScriptAnalyzer no instalado. Omitiendo auditoría estática." -ForegroundColor Yellow
 }
 
-# FUNCIÓN AUXILIAR DE PRUEBAS
+# ETAPA PREVIA 3: UNIT TESTS DE SEGURIDAD Y HARDWARE (PESTER MOCK)
+Write-Host "`n=== Etapa Previa 3: Unit tests (Pester Mock) de scripts de seguridad ===" -ForegroundColor Cyan
+$UnitTestsPath = Join-Path $PSScriptRoot "unit-tests"
+
+if (Test-Path $UnitTestsPath) {
+    if (Get-Module -ListAvailable -Name Pester) {
+        Import-Module Pester -MinimumVersion 5.0 -ErrorAction Stop
+
+        if (-not (Test-Path $FallbackLogDir)) {
+            New-Item -Path $FallbackLogDir -ItemType Directory -Force | Out-Null
+        }
+        $PesterLogPath = Join-Path $FallbackLogDir "RAWOUTPUT_Pester_UnitTests.log"
+
+        $PesterConfig = [PesterConfiguration]::Default
+        $PesterConfig.Run.Path = $UnitTestsPath
+        $PesterConfig.Output.Verbosity = 'Detailed'
+        $PesterConfig.TestResult.Enabled = $true
+        $PesterConfig.TestResult.OutputPath = Join-Path $PSScriptRoot "logs\pester-results.xml"
+        $PesterConfig.TestResult.OutputFormat = 'NUnitXml'
+
+        # Captura el output de Pester a archivo mientras lo muestra en consola
+        $PesterResult = Invoke-Pester -Configuration $PesterConfig *>&1 |
+            Tee-Object -FilePath $PesterLogPath |
+            Where-Object { $_ -is [Pester.Run] } |
+            Select-Object -Last 1
+
+        # Si Tee-Object mezcló el objeto resultado con el stream, recuperarlo del config
+        if (-not $PesterResult -or -not $PesterResult.PSObject.Properties['FailedCount']) {
+            $PesterResult = Invoke-Pester -Configuration $PesterConfig
+        }
+
+        $PesterPassed = ($PesterResult.FailedCount -eq 0)
+        $script:Results += [PSCustomObject]@{
+            Test              = "Unit tests seguridad (Pester)"
+            ExpectedExitCode  = "0 fallidos"
+            ActualExitCode    = "$($PesterResult.FailedCount) fallidos de $($PesterResult.TotalCount)"
+            LogPatternMatched = "N/A"
+            Result            = if ($PesterPassed) { "PASS" } else { "FAIL" }
+        }
+
+        if (-not $PesterPassed) {
+            Write-Host "Se detectaron $($PesterResult.FailedCount) fallo(s) en las pruebas unitarias." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "[ADVERTENCIA] Modulo Pester no instalado. Omitiendo pruebas unitarias con Mocks." -ForegroundColor Yellow
+        $script:Results += [PSCustomObject]@{
+            Test              = "Unit tests seguridad (Pester)"
+            ExpectedExitCode  = "N/A"
+            ActualExitCode    = "Modulo no presente"
+            LogPatternMatched = "N/A"
+            Result            = "SKIPPED"
+        }
+    }
+} else {
+    Write-Host "No se encontro el directorio de unit tests en: $UnitTestsPath" -ForegroundColor DarkGray
+    $script:Results += [PSCustomObject]@{
+        Test              = "Unit tests seguridad (Pester)"
+        ExpectedExitCode  = "N/A"
+        ActualExitCode    = "Directorio no encontrado"
+        LogPatternMatched = "N/A"
+        Result            = "SKIPPED"
+    }
+}
+
+# FUNCIÓN AUXILIAR DE PRUEBAS DE INTEGRACIÓN
 function Invoke-TestDriver {
     param(
         [string]$Name,
@@ -137,7 +199,7 @@ function Invoke-TestDriver {
     Write-Host "Resultado: $(if ($Passed) {'PASS'} else {'FAIL'}) (exit code: $ActualExitCode, esperado: $ExpectedExitCode)" -ForegroundColor $Color
 }
 
-# BATERÍA DE PRUEBAS UNITARIAS E INTEGRACIÓN
+# BATERÍA DE PRUEBAS DE INTEGRACIÓN
 try {
     # Precondición: respaldo del manifiesto real
     # Todo lo que sigue asume que este backup existe y es restaurable
@@ -207,11 +269,7 @@ try {
         Result            = if ($Test5Pass) { "PASS" } else { "FAIL" }
     }
 
-    # Test 6: bug histórico de propagación de errores en BIOS (standalone, sin wrapper)
-    # Referencia de regresión: confirma que Set-LenovoBiosBaseline.MockBuggy.ps1 (con
-    # catch que traga errores) sigue reproduciendo el bug original si se ejecuta fuera
-    # del wrapper. El wrapper por sí solo enmascaraba este bug al heredar su propio
-    # $ErrorActionPreference='Stop' — este test prueba el script en aislamiento real.
+    # Test 6: bug histórico de propagación de errores en BIOS
     Write-Host "`n=== Ejecutando: Test 6 - Bug histórico BIOS (referencia, standalone) ===" -ForegroundColor Cyan
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test6-bios-buggy-standalone.ps1") | Out-Null
     $Test6ExitCode = $LASTEXITCODE
@@ -225,9 +283,7 @@ try {
         Result            = if ($Test6Pass) { "PASS" } else { "FAIL" }
     }
 
-    # Test 7: script de BIOS con el fix real, standalone (sin wrapper)
-    # Confirma que sin catch + con $ErrorActionPreference='Stop' propio, el script
-    # aborta correctamente incluso invocado fuera del wrapper.
+    # Test 7: script de BIOS con el fix real, standalone
     Write-Host "`n=== Ejecutando: Test 7 - Propagación correcta BIOS (fix real, standalone) ===" -ForegroundColor Cyan
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "test7-bios-fixed-standalone.ps1") | Out-Null
     $Test7ExitCode = $LASTEXITCODE
@@ -282,13 +338,13 @@ try {
 
     # Persistencia de logs de esta corrida
     if (Test-Path $FallbackLogDir) {
-        # 1. Crear explícitamente el directorio si no existe
+        # Crear explícitamente el directorio si no existe
         $LogDirTarget = Join-Path $PSScriptRoot "logs"
         if (-not (Test-Path $LogDirTarget)) {
             New-Item -Path $LogDirTarget -ItemType Directory -Force | Out-Null
         }
 
-        # 2. Definir la ruta correcta sin duplicar 'test-drivers'
+        # Definir la ruta correcta sin duplicar 'test-drivers'
         $DatabasePath = Join-Path $LogDirTarget "dev-test-logs.db"
         $RunId = Get-Date -Format "yyyyMMdd_HHmmss"
 
