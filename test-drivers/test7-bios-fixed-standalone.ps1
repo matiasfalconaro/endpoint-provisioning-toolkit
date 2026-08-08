@@ -1,4 +1,4 @@
-$SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
+﻿$SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
 
 # Usamos una copia del script real pero con el mismo mock de Invoke-CimMethod,
 # para poder probar sin hardware Lenovo. El contenido (sin catch, con

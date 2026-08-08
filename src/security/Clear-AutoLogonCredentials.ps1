@@ -3,7 +3,7 @@
     Sanitiza y destruye las credenciales de AutoLogon y archivos de respuesta desatendidos.
 .DESCRIPTION
     Elimina las claves DefaultPassword, DefaultUserName y AutoAdminLogon del Registro de Windows,
-    fuerza el borrado seguro del archivo unattend.xml y verifica que el inicio de sesiÃ³n automÃ¡tico quede deshabilitado.
+    fuerza el borrado seguro del archivo unattend.xml y verifica que el inicio de sesión automático quede deshabilitado.
 .EXAMPLE
     .\Clear-AutoLogonCredentials.ps1
 #>
@@ -14,7 +14,7 @@ param()
 $ErrorActionPreference = 'Stop'
 
 try {
-    Write-Output "Iniciando proceso de sanitizaciÃ³n de credenciales temporales de AutoLogon..."
+    Write-Output "Iniciando proceso de sanitización de credenciales temporales de AutoLogon..."
 
     # 1. Borrado seguro de claves de AutoLogon en HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon
     $WinlogonPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
@@ -34,10 +34,10 @@ try {
         }
     }
 
-    # Forzar AutoAdminLogon a 0 explÃ­citamente
+    # Forzar AutoAdminLogon a 0 explícitamente
     Set-ItemProperty -Path $WinlogonPath -Name "AutoAdminLogon" -Value "0" -Type String -Force
 
-    # 2. DestrucciÃ³n de archivos de respuesta Unattend con credenciales en texto plano / base64
+    # 2. Destrucción de archivos de respuesta Unattend con credenciales en texto plano / base64
     $UnattendPaths = @(
         "$env:SystemRoot\Panther\unattend.xml",
         "$env:SystemRoot\Panther\Unattend\unattend.xml",
@@ -47,9 +47,9 @@ try {
 
     foreach ($Path in $UnattendPaths) {
         if (Test-Path -Path $Path) {
-            Write-Output "Destruyendo archivo de respuesta con credenciales efÃ­meras: $Path"
+            Write-Output "Destruyendo archivo de respuesta con credenciales efímeras: $Path"
             
-            # Sobrescritura previa a la eliminaciÃ³n
+            # Sobrescritura previa a la eliminación
             Set-Content -Path $Path -Value "SANATIZED" -Force
             Remove-Item -Path $Path -Force
         }
@@ -58,11 +58,11 @@ try {
     # 3. Validar que la purga fue exitosa
     $CheckPassword = (Get-ItemProperty -Path $WinlogonPath -ErrorAction SilentlyContinue).DefaultPassword
     if ($null -ne $CheckPassword) {
-        throw "ALERTA DE SEGURIDAD CRÃTICA: La contraseÃ±a de AutoLogon no pudo ser eliminada del Registro."
+        throw "ALERTA DE SEGURIDAD CRÍTICA: La contraseña de AutoLogon no pudo ser eliminada del Registro."
     }
 
-    Write-Output "SanitizaciÃ³n de credenciales de AutoLogon completada exitosamente. Registro y disco limpios."
+    Write-Output "Sanitización de credenciales de AutoLogon completada exitosamente. Registro y disco limpios."
 
 } catch {
-    throw "ERROR CRÃTICO EN PURGA DE AUTOLOGON: $_"
+    throw "ERROR CRÍTICO EN PURGA DE AUTOLOGON: $_"
 }

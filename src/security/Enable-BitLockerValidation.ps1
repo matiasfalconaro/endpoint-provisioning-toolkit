@@ -3,8 +3,8 @@
     Valida, configura y respalda las claves de BitLocker en Active Directory / Entra ID.
 .DESCRIPTION
     Verifica los requisitos de dTPM 2.0, asigna el protector TPM, fuerza el respaldo
-    de la clave de recuperaciÃ³n en AD DS y/o Microsoft Entra ID segÃºn el escenario de
-    uniÃ³n del equipo, y confirma el cifrado del volumen del sistema.
+    de la clave de recuperación en AD DS y/o Microsoft Entra ID según el escenario de
+    unión del equipo, y confirma el cifrado del volumen del sistema.
 .EXAMPLE
     .\Enable-BitLockerValidation.ps1
 #>
@@ -23,28 +23,28 @@ function Invoke-BitLockerValidation {
     $ErrorActionPreference = 'Stop'
 
     try {
-        # VerificaciÃ³n de dTPM 2.0
+        # Verificación de dTPM 2.0
         $Tpm = Get-Tpm -ErrorAction SilentlyContinue
         if (-not $Tpm.TpmReady) {
-            throw "SEGURIDAD CRÃTICA: El chip dTPM 2.0 no estÃ¡ listo para habilitar BitLocker"
+            throw "SEGURIDAD CRÍTICA: El chip dTPM 2.0 no está listo para habilitar BitLocker"
         }
 
         $TargetDrive = $env:SystemDrive
 
-        # ComprobaciÃ³n de estado
+        # Comprobación de estado
         $BitLockerStatus = Get-BitLockerVolume -MountPoint $TargetDrive -ErrorAction Stop
 
-        # InyecciÃ³n de protector TPM
+        # Inyección de protector TPM
         $TpmProtector = $BitLockerStatus.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'Tpm' }
         if ($null -eq $TpmProtector) {
-            Write-Output "AÃ±adiendo protector dTPM al volumen $TargetDrive"
+            Write-Output "Añadiendo protector dTPM al volumen $TargetDrive"
             Add-BitLockerKeyProtector -MountPoint $TargetDrive -TpmProtector | Out-Null
         }
 
-        # GeneraciÃ³n / ObtenciÃ³n de Recovery Password
+        # Generación / Obtención de Recovery Password
         $RecoveryProtector = $BitLockerStatus.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' } | Select-Object -First 1
         if ($null -eq $RecoveryProtector -or [string]::IsNullOrEmpty($RecoveryProtector.KeyProtectorId)) {
-            Write-Output "Generando clave de recuperaciÃ³n de 48 dÃ­gitos"
+            Write-Output "Generando clave de recuperación de 48 dígitos"
             $AddedProtector = Add-BitLockerKeyProtector -MountPoint $TargetDrive -RecoveryPasswordProtector
             
             # Soporte dual: Extraer Id si Add-BitLockerKeyProtector retorna el objeto o re-consultar el volumen
@@ -61,7 +61,7 @@ function Invoke-BitLockerValidation {
         # Fallback de seguridad si KeyProtectorId sigue ausente (Mocks simples)
         $KeyProtectorId = if ($RecoveryProtector.KeyProtectorId) { $RecoveryProtector.KeyProtectorId } else { "{DUMMY-KEY-PROTECTOR-ID}" }
 
-        # Respaldo segÃºn dominio
+        # Respaldo según dominio
         $DsregStatus = Invoke-DsregcmdStatus
         $IsAzureAdJoined = ($DsregStatus | Select-String "AzureAdJoined\s*:\s*YES")
         $IsDomainJoined  = ($DsregStatus | Select-String "DomainJoined\s*:\s*YES")
@@ -83,10 +83,10 @@ function Invoke-BitLockerValidation {
         }
 
         if (-not $BackupSucceeded) {
-            throw "ALERTA DE SEGURIDAD: El equipo no estÃ¡ unido a Active Directory ni a Microsoft Entra ID. No se pudo respaldar la clave de recuperaciÃ³n de BitLocker en ningÃºn directorio"
+            throw "ALERTA DE SEGURIDAD: El equipo no está unido a Active Directory ni a Microsoft Entra ID. No se pudo respaldar la clave de recuperación de BitLocker en ningún directorio"
         }
 
-        # ActivaciÃ³n del cifrado
+        # Activación del cifrado
         if ($BitLockerStatus.ProtectionStatus -eq 'Off') {
             Write-Output "Iniciando cifrado de unidad BitLocker (XTS-AES 256)"
             Enable-BitLocker -MountPoint $TargetDrive -EncryptionMethod XtsAes256 -UsedSpaceOnly -SkipHardwareTest -TpmProtector | Out-Null
@@ -99,7 +99,7 @@ function Invoke-BitLockerValidation {
     }
 }
 
-# Guarda de invocaciÃ³n
+# Guarda de invocación
 if ($MyInvocation.InvocationName -ne '.') {
     Invoke-BitLockerValidation
 }

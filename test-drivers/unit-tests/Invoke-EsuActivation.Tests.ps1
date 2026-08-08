@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     . "$PSScriptRoot\..\..\src\provisioning\Invoke-EsuActivation.ps1"
 }
 

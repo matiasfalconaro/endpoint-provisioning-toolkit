@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Mock de Set-LenovoBiosBaseline.ps1 con el fix real aplicado (referencia
     para test de regresión).

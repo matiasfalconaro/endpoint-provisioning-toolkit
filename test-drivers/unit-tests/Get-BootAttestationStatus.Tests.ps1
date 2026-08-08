@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     . "$PSScriptRoot\..\..\src\security\Get-BootAttestationStatus.ps1"
 }
 

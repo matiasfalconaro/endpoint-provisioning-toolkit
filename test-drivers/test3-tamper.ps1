@@ -1,4 +1,4 @@
-& ".\src\core\Invoke-DeploymentTask.ps1" `
+﻿& ".\src\core\Invoke-DeploymentTask.ps1" `
     -TaskName "Test-Tamper" `
     -ScriptPath ".\src\features\Enable-WindowsOptionalFeatures.ps1" `
     -ManifestPath ".\manifest.json" `

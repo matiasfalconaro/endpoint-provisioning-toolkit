@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     . "$PSScriptRoot\..\..\src\optimization\Set-WindowsPowerAndServicesOptimization.ps1"
 }
 

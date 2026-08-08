@@ -8,9 +8,9 @@
     Ruta centralizada al script de onboarding corporativo (.cmd o .ps1). Los .ps1 se
     invocan con powershell.exe -File; los .cmd/.bat con cmd.exe /c.
 .PARAMETER OnboardingTimeoutSeconds
-    Tiempo mÃ¡ximo de espera para que el proceso de onboarding finalice. Default: 300s.
+    Tiempo máximo de espera para que el proceso de onboarding finalice. Default: 300s.
 .PARAMETER SenseServiceTimeoutSeconds
-    Tiempo mÃ¡ximo de espera (con reintentos) para que el servicio Sense reporte
+    Tiempo máximo de espera (con reintentos) para que el servicio Sense reporte
     'Running' tras el onboarding. Default: 180s.
 .EXAMPLE
     .\Enable-DefenderEdrOnboarding.ps1 -OnboardingScriptPath "\\NAS-CORP01\Deployment\Security\WindowsDefenderATPOnboardingScript.cmd"
@@ -55,11 +55,11 @@ function Invoke-OnboardingScript {
 
     if (-not $Finished) {
         try { $Process.Kill() } catch { }
-        throw "El proceso de onboarding no finalizÃ³ dentro de $TimeoutSeconds segundos. Proceso terminado forzosamente."
+        throw "El proceso de onboarding no finalizó dentro de $TimeoutSeconds segundos. Proceso terminado forzosamente."
     }
 
     if ($Process.ExitCode -ne 0) {
-        throw "Falla al ejecutar el onboarding de EDR. CÃ³digo de salida: $($Process.ExitCode)"
+        throw "Falla al ejecutar el onboarding de EDR. Código de salida: $($Process.ExitCode)"
     }
 }
 
@@ -97,24 +97,24 @@ function Invoke-DefenderEdrOnboarding {
         $DefenderStatus = Get-MpComputerStatus -ErrorAction Stop
 
         if (-not $DefenderStatus.RealTimeProtectionEnabled) {
-            Write-Output "Habilitando ProtecciÃ³n en Tiempo Real..."
-        # Nota: si Tamper Protection ya estÃ¡ activo, este comando puede fallar
-        # por diseÃ±o de Microsoft. Si este script corre en una fase posterior
-        # a la aplicaciÃ³n de la GPO de Tamper Protection, revisar el orden de
-        # ejecuciÃ³n en la Task Sequence.
+            Write-Output "Habilitando Protección en Tiempo Real..."
+        # Nota: si Tamper Protection ya está activo, este comando puede fallar
+        # por diseño de Microsoft. Si este script corre en una fase posterior
+        # a la aplicación de la GPO de Tamper Protection, revisar el orden de
+        # ejecución en la Task Sequence.
             Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction Stop
         }
 
         if (-not $DefenderStatus.AntivirusEnabled) {
-            throw "SEGURIDAD CRÃTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
+            throw "SEGURIDAD CRÍTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
         }
 
-        # EjecuciÃ³n de Onboarding EDR / Defender for Endpoint (XDR)
+        # Ejecución de Onboarding EDR / Defender for Endpoint (XDR)
         $SenseService = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
 
         if ($null -eq $SenseService -or $SenseService.Status -ne 'Running') {
             if (-not (Test-Path -Path $OnboardingScriptPath)) {
-                throw "No se encontrÃ³ el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
+                throw "No se encontró el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
             }
 
             Write-Output "Ejecutando onboarding desatendido a Defender for Endpoint (EDR)..."
@@ -127,17 +127,17 @@ function Invoke-DefenderEdrOnboarding {
 
         Write-Output "Esperando a que el servicio Sense (EDR) quede operativo..."
         if (-not (Wait-SenseServiceRunning -TimeoutSeconds $SenseServiceTimeoutSeconds)) {
-            throw "ALERTA DE SEGURIDAD: El servicio EDR (Sense) no reportÃ³ estado 'Running' dentro de $SenseServiceTimeoutSeconds segundos."
+            throw "ALERTA DE SEGURIDAD: El servicio EDR (Sense) no reportó estado 'Running' dentro de $SenseServiceTimeoutSeconds segundos."
         }
 
         Write-Output "Microsoft Defender Antivirus y EDR (Sense) validados y activos."
 
     } catch {
-        throw "ERROR CRÃTICO EN ONBOARDING DEFENDER/EDR: $_"
+        throw "ERROR CRÍTICO EN ONBOARDING DEFENDER/EDR: $_"
     }
 }
 
-# Guarda de invocaciÃ³n
+# Guarda de invocación
 if ($MyInvocation.InvocationName -ne '.') {
     Invoke-DefenderEdrOnboarding -OnboardingScriptPath $OnboardingScriptPath `
                                  -OnboardingTimeoutSeconds $OnboardingTimeoutSeconds `

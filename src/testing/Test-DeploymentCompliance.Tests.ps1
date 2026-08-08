@@ -3,13 +3,13 @@
     Suite de Pruebas de Cumplimiento Post-Aprovisionamiento Pester (Zero-Touch Validation).
 .DESCRIPTION
     Audita la postura de seguridad, parches, licenciamiento ESU, estado de BitLocker, EDR,
-    firmas de cÃ³digo e higiene de credenciales del endpoint reciÃ©n aprovisionado.
+    firmas de código e higiene de credenciales del endpoint recién aprovisionado.
 .PARAMETER DeploymentRoot
     Ruta a la carpeta src/ del repositorio de despliegue. MECANISMO RECOMENDADO:
-    pasarla explÃ­citamente vÃ­a New-PesterContainer -Data desde quien invoca Pester
+    pasarla explícitamente vía New-PesterContainer -Data desde quien invoca Pester
     (ej. Invoke-PostDeploymentTest.ps1), ya que $PSScriptRoot no se propaga de
-    forma confiable dentro del modelo de ejecuciÃ³n interno de Pester v5+. Si se
-    omite, se intenta una cadena de resoluciÃ³n automÃ¡tica (PSScriptRoot,
+    forma confiable dentro del modelo de ejecución interno de Pester v5+. Si se
+    omite, se intenta una cadena de resolución automática (PSScriptRoot,
     PSCommandPath, MyInvocation, directorio actual) como mejor esfuerzo, pero
     puede dar Skip si ninguna resuelve correctamente.
     fase de Discovery y la fase de Run de Pester v5+.
@@ -27,7 +27,7 @@ param(
 )
 
 
-Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
+Describe "Auditoría Global de Conformidad de Infraestructura" {
 
     Context "1. Seguridad de Firmware y Arranque Seguro" {
         It "Secure Boot debe estar habilitado en el firmware UEFI" {
@@ -54,7 +54,7 @@ Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
             $BitLocker.EncryptionMethod | Should -Be "XtsAes256"
         }
 
-        It "Debe existir un protector dTPM y una Clave de RecuperaciÃ³n de 48 dÃ­gitos" {
+        It "Debe existir un protector dTPM y una Clave de Recuperación de 48 dígitos" {
             $BitLocker = Get-BitLockerVolume -MountPoint $env:SystemDrive
             $Protectors = $BitLocker.KeyProtector.KeyProtectorType
             $Protectors | Should -Contain "Tpm"
@@ -63,27 +63,27 @@ Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
     }
 
     Context "3. Postura de Antivirus, EDR y XDR (Microsoft Defender)" {
-        It "Microsoft Defender Antivirus debe estar activo y con protecciÃ³n en tiempo real" {
+        It "Microsoft Defender Antivirus debe estar activo y con protección en tiempo real" {
             $Defender = Get-MpComputerStatus
             $Defender.AntivirusEnabled | Should -BeTrue
             $Defender.RealTimeProtectionEnabled | Should -BeTrue
         }
 
-        It "El servicio EDR Defender for Endpoint (Sense) debe estar ejecutÃ¡ndose" {
+        It "El servicio EDR Defender for Endpoint (Sense) debe estar ejecutándose" {
             $Sense = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
             $Sense.Status | Should -Be "Running"
             $Sense.StartType | Should -Be "Automatic"
         }
     }
 
-    Context "4. Firma de CÃ³digo e Integridad PowerShell (Authenticode)" {
+    Context "4. Firma de Código e Integridad PowerShell (Authenticode)" {
 
-        It "La polÃ­tica de ejecuciÃ³n de PowerShell debe ser AllSigned" {
+        It "La política de ejecución de PowerShell debe ser AllSigned" {
             $Policy = Get-ExecutionPolicy
             $Policy | Should -Be "AllSigned"
         }
 
-        It "Todos los scripts desplegados en src/ deben tener firma Authenticode vÃ¡lida" {
+        It "Todos los scripts desplegados en src/ deben tener firma Authenticode válida" {
             if (-not $DeploymentRoot -or -not (Test-Path $DeploymentRoot)) {
                 Set-ItResult -Skipped -Because "DeploymentRoot no fue provisto o no es accesible. Debe pasarse via New-PesterContainer -Data @{ DeploymentRoot = '...' }"
                 return
@@ -121,7 +121,7 @@ Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
             $Winlogon.DefaultDomainName | Should -BeNullOrEmpty
         }
 
-        It "NingÃºn archivo de respuesta desatendida (unattend.xml) debe persistir en ninguna ubicaciÃ³n conocida" {
+        It "Ningún archivo de respuesta desatendida (unattend.xml) debe persistir en ninguna ubicación conocida" {
             $UnattendPaths = @(
                 "$env:SystemRoot\Panther\unattend.xml",
                 "$env:SystemRoot\Panther\Unattend\unattend.xml",
@@ -130,7 +130,7 @@ Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
             )
 
             foreach ($Path in $UnattendPaths) {
-                Test-Path -Path $Path | Should -BeFalse -Because "el archivo '$Path' no deberÃ­a persistir tras la purga de AutoLogon"
+                Test-Path -Path $Path | Should -BeFalse -Because "el archivo '$Path' no debería persistir tras la purga de AutoLogon"
             }
         }
     }
@@ -141,7 +141,7 @@ Describe "AuditorÃ­a Global de Conformidad de Infraestructura" {
             $License | Should -Not -BeNullOrEmpty
         }
 
-        It "No deben quedar workspaces efÃ­meros o instaladores temporales en C:\" {
+        It "No deben quedar workspaces efímeros o instaladores temporales en C:\" {
             $TempFolderExists = Test-Path -Path "C:\IT_Deployment_*"
             $TempFolderExists | Should -BeFalse
         }

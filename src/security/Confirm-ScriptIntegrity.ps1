@@ -2,15 +2,15 @@
 .SYNOPSIS
     Genera o valida el manifiesto de integridad de hashes SHA-256 de los scripts del repositorio.
 .DESCRIPTION
-    Calcula la huella criptogrÃ¡fica SHA-256 de los archivos en src/ y templates/,
-    compara los resultados contra el archivo manifest.json central y notifica cualquier alteraciÃ³n.
+    Calcula la huella criptográfica SHA-256 de los archivos en src/ y templates/,
+    compara los resultados contra el archivo manifest.json central y notifica cualquier alteración.
 .PARAMETER Action
     Determina si se genera un nuevo manifiesto ('Generate') o si se audita el repositorio ('Validate').
 .PARAMETER ManifestPath
     Ruta oficial al archivo de manifiesto centralizado.
 .PARAMETER SourcePath
-    RaÃ­z del repositorio (no de src/ directamente). Si se omite, se resuelve automÃ¡ticamente
-    en base a la ubicaciÃ³n de este script. Compatible con Windows PowerShell 5.1 (WinPE/Task
+    Raíz del repositorio (no de src/ directamente). Si se omite, se resuelve automáticamente
+    en base a la ubicación de este script. Compatible con Windows PowerShell 5.1 (WinPE/Task
     Sequence) y PowerShell 7 (CI): no depende de [System.IO.Path]::GetRelativePath, que no
     existe en .NET Framework.
 .EXAMPLE
@@ -32,7 +32,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# ResoluciÃ³n robusta de SourcePath
+# Resolución robusta de SourcePath
 if (-not $SourcePath) {
     $SourcePath = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).ProviderPath
 } else {
@@ -40,20 +40,20 @@ if (-not $SourcePath) {
 }
 $SourcePath = $SourcePath.TrimEnd('\', '/')
 
-# CÃ¡lculo de ruta relativa sin GetRelativePath
+# Cálculo de ruta relativa sin GetRelativePath
 function Get-NormalizedRelativePath {
     param(
         [string]$BasePath,
         [string]$FullPath
     )
     if (-not $FullPath.StartsWith($BasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "No se puede calcular ruta relativa: '$FullPath' no estÃ¡ dentro de '$BasePath'."
+        throw "No se puede calcular ruta relativa: '$FullPath' no está dentro de '$BasePath'."
     }
     $Relative = $FullPath.Substring($BasePath.Length).TrimStart('\', '/')
     return $Relative -replace '\\', '/'
 }
 
-# Alcance explÃ­cito: solo src/ y templates/, tal como documenta el docstring
+# Alcance explícito: solo src/ y templates/, tal como documenta el docstring
 function Get-ScopedTargetFiles {
     param([string]$RepoRoot)
 
@@ -71,7 +71,7 @@ function Get-ScopedTargetFiles {
 }
 
 try {
-    # Modo GeneraciÃ³n de Manifiesto
+    # Modo Generación de Manifiesto
     if ($Action -eq "Generate") {
         Write-Output "Generando manifiesto de hashes SHA-256 desde: $SourcePath (src/, templates/)..."
 
@@ -89,9 +89,9 @@ try {
         return
     }
 
-    # Modo ValidaciÃ³n de Integridad Pre-EjecuciÃ³n
+    # Modo Validación de Integridad Pre-Ejecución
     if (-not (Test-Path -Path $ManifestPath)) {
-        throw "SEGURIDAD CRÃTICA: No se encontrÃ³ el manifiesto de integridad en '$ManifestPath'."
+        throw "SEGURIDAD CRÍTICA: No se encontró el manifiesto de integridad en '$ManifestPath'."
     }
 
     Write-Output "Cargando manifiesto de integridad y verificando hashes SHA-256..."
@@ -116,11 +116,11 @@ try {
     }
 
     if ($CorruptedFiles.Count -gt 0) {
-        throw "FALLA DE INTEGRIDAD: Se detectaron $($CorruptedFiles.Count) archivos alterados o faltantes en el repositorio. EjecuciÃ³n abortada."
+        throw "FALLA DE INTEGRIDAD: Se detectaron $($CorruptedFiles.Count) archivos alterados o faltantes en el repositorio. Ejecución abortada."
     }
 
-    Write-Output "ValidaciÃ³n de integridad completada con Ã©xito. Todos los hashes SHA-256 coinciden."
+    Write-Output "Validación de integridad completada con éxito. Todos los hashes SHA-256 coinciden."
 
 } catch {
-    throw "ERROR CRÃTICO EN CONTROL DE INTEGRIDAD: $_"
+    throw "ERROR CRÍTICO EN CONTROL DE INTEGRIDAD: $_"
 }

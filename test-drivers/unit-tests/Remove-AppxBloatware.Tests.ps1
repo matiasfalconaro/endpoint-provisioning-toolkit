@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     # Stub para entornos sin el modulo Appx disponible (runners de CI, maquinas
     # de desarrollo sin la imagen de Windows con este modulo cargado)
     if (-not (Get-Command 'Get-AppxProvisionedPackage' -ErrorAction SilentlyContinue)) {

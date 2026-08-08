@@ -1,4 +1,4 @@
-$SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
+﻿$SecurePass = ConvertTo-SecureString "TestPassword123" -AsPlainText -Force
 
 & ".\test-drivers\mocks\Set-LenovoBiosBaseline.Mock.ps1" -BiosPassword $SecurePass
 
