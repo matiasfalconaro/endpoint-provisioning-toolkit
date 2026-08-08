@@ -6,8 +6,19 @@ Para:
 - Batería completa de pruebas unitarias/integración y consolidación de logs en SQLite (`dev-test-logs.db`)
 
 ```powershell
+# Ejecución estándar en desarrollo (bloquea/omite tests de riesgo por guarda de seguridad)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\test-drivers\Run-AllTests.ps1
+
+# Habilitar explícitamente la ejecución de tests protegidos en la sesión actual
+$env:ALLOW_HAZARDOUS_TESTS = "true"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\test-drivers\Run-AllTests.ps1
 ```
+
+Nota (Guarda de Seguridad):
+Para evitar ejecuciones accidentales en entornos locales, los scripts de prueba sensibles y suites de Pester cuentan con Guard Clause. Si la variable de entorno `$env:ALLOW_HAZARDOUS_TESTS` no tiene el valor `"true"`, la prueba se omitirá automáticamente con estado SKIPPED o abortará limpiamente sin alterar el sistema ni interrumpir la suite global.
+
+Nota (Pester Mock):
+Los scripts en `src/security/` tocan cmdlets sensibles del sistema. Para prevenir la alteración del entorno de desarrollo, el orquestador ejecuta los tests unitarios mediante Pester Interception sobre funciones encapsuladas. Si el módulo Pester no está disponible en el sistema, la etapa reportará estado SKIPPED sin bloquear los tests de integración.
 
 Nota (Pester Mock):
 Los scripts en src/security/ tocan cmdlets sensibles del sistema (ej. Enable-BitLocker, Set-MpPreference). Para prevenir la alteración del entorno de desarrollo, el orquestador ejecuta los tests unitarios mediante Pester Interception (Mocks) sobre funciones encapsuladas (invocation guards). Si el módulo Pester no está disponible en el sistema, la etapa reportará estado SKIPPED sin bloquear los tests de integración.
@@ -23,6 +34,7 @@ Nota sobre el Test 6:
 
 ## Calidad y Reglas de Código
 - `PSScriptAnalyzer` Integrado automáticamente en `Run-AllTests.ps1`.
+- Todos los scripts de prueba unitarios, standalone y Mocks con potencial impacto en hardware o configuración del sistema requieren la variable `$env:ALLOW_HAZARDOUS_TESTS = "true"` para ejecutarse. En tests de Pester reportan SKIPPED si la variable está ausente.
 - Todo script en `src/security/` con efectos secundarios críticos debe envolver su lógica de ejecución dentro de una función pública y proteger su auto-ejecución mediante un condicional.
 - Para prevenir `CommandNotFoundException` en entornos o runners desprovistos de módulos RSAT/BitLocker, los tests unitarios declaran stubs globales condicionales previa llamada a `Mock`.
 - Se consolidan automáticamente los registros en `dev-test-logs.db` discriminando líneas estructuradas y no estructuradas. Si la base de datos no está disponible, conmuta automáticamente al archivado local en carpeta (logs_timestamp).
