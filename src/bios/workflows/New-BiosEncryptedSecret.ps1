@@ -13,57 +13,62 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [System.Security.SecureString]$BiosPassword,
 
     [Parameter(Mandatory = $false)]
     [string]$OutputPath = "C:\IT_Deployment\BiosPassword.key"
 )
 
+function Invoke-DpapiProtect {
+    param(
+        [byte[]]$Data
+    )
+    Add-Type -AssemblyName System.Security
+    [System.Security.Cryptography.ProtectedData]::Protect(
+        $Data, 
+        $null, 
+        [System.Security.Cryptography.DataProtectionScope]::LocalMachine
+    )
+}
+
+function Invoke-FileWriteAllBytes {
+    param(
+        [string]$Path, 
+        [byte[]]$Bytes
+    )
+    [System.IO.File]::WriteAllBytes($Path, $Bytes)
+}
+
 function Invoke-BiosSecretGeneration {
     [CmdletBinding()]
     param(
+        [Parameter(Mandatory = $true)]
         [System.Security.SecureString]$BiosPassword,
+
+        [Parameter(Mandatory = $true)]
         [string]$OutputPath
     )
 
-    $ErrorActionPreference = 'Stop'
-
-    # Requerido en PowerShell 5.1 (WinPE): ProtectedData no esta cargado por defecto.
-    # En PowerShell 7 esta disponible sin esta linea, pero Add-Type es idempotente.
-    Add-Type -AssemblyName System.Security
-
-    $BSTR = [System.IntPtr]::Zero
-    $PlainPassword = $null
-
     try {
+        $Directory = Split-Path -Parent $OutputPath
+        if (-not (Test-Path -Path $Directory)) {
+            New-Item -ItemType Directory -Path $Directory -Force | Out-Null
+        }
+
         $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
         $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
 
-        $EncryptedBytes = [System.Security.Cryptography.ProtectedData]::Protect(
-            [System.Text.Encoding]::UTF8.GetBytes($PlainPassword),
-            $null,
-            [System.Security.Cryptography.DataProtectionScope]::LocalMachine
-        )
-
-        $OutputDir = Split-Path $OutputPath -Parent
-        if (-not (Test-Path $OutputDir)) {
-            New-Item -Path $OutputDir -ItemType Directory -Force | Out-Null
-        }
-
-        [System.IO.File]::WriteAllBytes($OutputPath, $EncryptedBytes)
-        Write-Host "Secreto DPAPI generado exitosamente en: $OutputPath" -ForegroundColor Green
-
-    } catch {
-        # Re-throw sin catch silencioso: el error debe propagarse al wrapper
-        # para que la Task Sequence lo registre y active el rollback.
+        $EncryptedBytes = Invoke-DpapiProtect -Data ([System.Text.Encoding]::UTF8.GetBytes($PlainPassword))
+        Invoke-FileWriteAllBytes -Path $OutputPath -Bytes $EncryptedBytes
+    }
+    catch {
         throw "Error al generar el secreto cifrado: $_"
-    } finally {
-        if ($BSTR -ne [System.IntPtr]::Zero) {
+    }
+    finally {
+        if ($BSTR) {
             [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
         }
-        $PlainPassword = $null
-        [System.GC]::Collect()
     }
 }
 
