@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Ajuste dinámico de perfiles de energía por factor de forma (Task Sequence Step).
 .DESCRIPTION

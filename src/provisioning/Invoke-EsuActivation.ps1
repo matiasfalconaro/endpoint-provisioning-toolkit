@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Inyecta y activa desatendidamente licencias Extended Security Updates (ESU) vía WMI/CIM.
 .DESCRIPTION

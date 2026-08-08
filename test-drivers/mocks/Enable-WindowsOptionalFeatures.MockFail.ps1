@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Mock de Enable-WindowsOptionalFeatures.ps1 que simula un fallo real de DISM
     (código 87, "parámetro incorrecto") en el segundo paso, para probar que el

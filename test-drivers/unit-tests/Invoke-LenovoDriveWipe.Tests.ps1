@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     . "$PSScriptRoot\..\..\src\maintenance\Invoke-LenovoDriveWipe.ps1"
 }
 

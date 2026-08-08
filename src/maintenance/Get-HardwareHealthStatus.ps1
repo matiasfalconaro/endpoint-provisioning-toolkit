@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Obtiene el estado de salud del hardware (SSD S.M.A.R.T., Batería y BIOS/Firmware).
 .DESCRIPTION

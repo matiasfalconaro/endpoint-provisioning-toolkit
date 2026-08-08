@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica la Baseline de BIOS de Lenovo utilizando un secreto cifrado por DPAPI.
 .DESCRIPTION

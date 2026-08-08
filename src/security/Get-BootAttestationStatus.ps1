@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audita el estado de Secure Boot, dTPM 2.0 y Measured Boot/Atestación en el endpoint.
 .DESCRIPTION

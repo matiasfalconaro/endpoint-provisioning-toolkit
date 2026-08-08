@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Driver de prueba para verificar la propagación de errores en los workflows de BIOS refactorizados.
 #>

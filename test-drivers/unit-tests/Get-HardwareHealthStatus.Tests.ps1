@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     # Se fuerza la definicion en el Function Provider para enmascarar los cmdlets nativos de Windows Storage
     function global:Get-PhysicalDisk {
         [CmdletBinding()]

@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     # Carga condicional del stub para stubs/mocks RSAT
     if (-not (Get-Command 'BackupToAAD-BitLockerKeyProtector' -ErrorAction SilentlyContinue)) {
         function global:BackupToAAD-BitLockerKeyProtector {}

@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     $script:TempDir = Join-Path $env:TEMP "sig-test-$(Get-Random)"
     New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 

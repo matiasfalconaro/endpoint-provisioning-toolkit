@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Genera o valida el manifiesto de integridad de hashes SHA-256 de los scripts del repositorio.
 .DESCRIPTION

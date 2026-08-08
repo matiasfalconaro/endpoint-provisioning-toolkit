@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Depuración Server-Side de paquetes AppX provisionados (Image Servicing Offline).
 .DESCRIPTION

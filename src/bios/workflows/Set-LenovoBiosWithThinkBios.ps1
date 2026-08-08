@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica la Baseline de BIOS mediante el módulo oficial ThinkBios-Config.
 .DESCRIPTION

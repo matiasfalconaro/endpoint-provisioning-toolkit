@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Orquesta la batería completa de pruebas locales para Invoke-DeploymentTask.ps1,
     Confirm-ScriptIntegrity.ps1, scripts hardware/BIOS y la suite de unit tests con Pester.
@@ -48,15 +48,19 @@ $Results = @()
 
 # ETAPA PREVIA 1: NORMALIZACIÓN DE ENCODING (opt-in)
 if ($FixEncoding) {
-    Write-Host "=== Etapa Previa 1: Verificando/Aplicando UTF-8 con BOM en scripts ===" -ForegroundColor Cyan
-    if (Test-Path $SrcPath) {
-        Get-ChildItem -Path $SrcPath -Recurse -Filter *.ps1 | ForEach-Object {
+    Write-Host "=== Etapa Previa 1: Verificando/Aplicando UTF-8 con BOM en scripts y tests ===" -ForegroundColor Cyan
+    
+    $TestDriversPath = Join-Path $RepoRoot "test-drivers"
+    $TargetFolders = @($SrcPath, $TestDriversPath) | Where-Object { $_ -and (Test-Path $_) }
+    
+    foreach ($folder in $TargetFolders) {
+        Get-ChildItem -Path $folder -Recurse -Filter *.ps1 | ForEach-Object {
             $filePath = $_.FullName
-            $content = Get-Content $filePath -Raw
+            $content = [System.IO.File]::ReadAllText($filePath, [System.Text.Encoding]::UTF8)
             [System.IO.File]::WriteAllText($filePath, $content, [System.Text.UTF8Encoding]::new($true))
         }
-        Write-Host "Codificación UTF-8 BOM normalizada en $SrcPath." -ForegroundColor Green
     }
+    Write-Host "Codificación UTF-8 BOM normalizada en scripts y pruebas." -ForegroundColor Green
 } else {
     Write-Host "=== Etapa Previa 1: Normalización de encoding OMITIDA (usar -FixEncoding para aplicarla) ===" -ForegroundColor DarkGray
 }

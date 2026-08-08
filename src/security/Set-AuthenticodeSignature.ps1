@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Firma digitalmente scripts de PowerShell con un certificado Authenticode o valida su integridad.
 .DESCRIPTION

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Inyección de Características Opcionales de Windows (Offline Image Servicing).
 .DESCRIPTION

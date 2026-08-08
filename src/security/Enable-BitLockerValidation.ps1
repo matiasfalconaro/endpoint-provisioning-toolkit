@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Valida, configura y respalda las claves de BitLocker en Active Directory / Entra ID.
 .DESCRIPTION

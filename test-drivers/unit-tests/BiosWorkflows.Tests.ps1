@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     # 1. Credenciales y rutas ficticias para ejecución segura
     $Script:TestSecurePass = ConvertTo-SecureString "TestPassword123!" -AsPlainText -Force
     $Script:FakeKeyPath   = "C:\IT_Deployment\BiosPassword.key"

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Sanitiza y destruye las credenciales de AutoLogon y archivos de respuesta desatendidos.
 .DESCRIPTION

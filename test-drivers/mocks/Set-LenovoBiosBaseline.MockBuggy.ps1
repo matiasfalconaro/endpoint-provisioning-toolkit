@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Mock de Set-LenovoBiosBaseline.ps1 que reproduce el bug histórico de
     propagación de errores (referencia para test de regresión).

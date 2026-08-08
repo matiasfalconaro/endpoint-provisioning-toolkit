@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Ejecutor de pruebas de cumplimiento e integración para la Task Sequence.
 .DESCRIPTION

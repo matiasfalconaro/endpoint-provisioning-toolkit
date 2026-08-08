@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica la Baseline de BIOS corporativa en equipos Lenovo ThinkPad.
 .DESCRIPTION

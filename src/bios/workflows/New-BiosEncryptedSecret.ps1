@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Genera un secreto cifrado vía DPAPI para la contraseña de BIOS.
 .DESCRIPTION

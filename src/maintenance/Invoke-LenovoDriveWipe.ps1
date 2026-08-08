@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Ejecuta el borrado seguro criptográfico de almacenamiento en fase de decomisionamiento.
 .DESCRIPTION

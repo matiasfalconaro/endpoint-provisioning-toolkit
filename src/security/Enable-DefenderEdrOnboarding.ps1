@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Valida y ejecuta el onboarding desatendido de Microsoft Defender Antivirus y EDR (XDR).
 .DESCRIPTION

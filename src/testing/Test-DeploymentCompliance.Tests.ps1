@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Suite de Pruebas de Cumplimiento Post-Aprovisionamiento Pester (Zero-Touch Validation).
 .DESCRIPTION

@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     . "$PSScriptRoot\..\..\src\security\Enable-DefenderEdrOnboarding.ps1"
 }
 
