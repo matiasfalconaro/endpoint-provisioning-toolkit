@@ -1,4 +1,10 @@
 BeforeAll {
+    # GUARDA DE SEGURIDAD
+    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
+        return
+    }
+
     # Asegura que Pester pueda declarar Mocks incluso en entornos sin el módulo BitLocker/RSAT cargado
     if (-not (Get-Command 'BackupToAAD-BitLockerKeyProtector' -ErrorAction SilentlyContinue)) {
         function global:BackupToAAD-BitLockerKeyProtector {}

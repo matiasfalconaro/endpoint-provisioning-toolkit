@@ -1,4 +1,10 @@
 BeforeAll {
+    # GUARDA DE SEGURIDAD
+    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
+        return
+    }
+
     . "$PSScriptRoot\..\..\src\security\Get-BootAttestationStatus.ps1"
 }
 
