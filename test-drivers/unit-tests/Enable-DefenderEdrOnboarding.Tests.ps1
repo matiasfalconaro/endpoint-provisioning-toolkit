@@ -1,14 +1,15 @@
 BeforeAll {
-    # GUARDA DE SEGURIDAD
-    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
-        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
-        return
-    }
-
     . "$PSScriptRoot\..\..\src\security\Enable-DefenderEdrOnboarding.ps1"
 }
 
 Describe "Enable-DefenderEdrOnboarding" {
+
+    # GUARDA DE SEGURIDAD: Ubicada DENTRO de Describe
+    BeforeEach {
+        if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+            Set-ItResult -Skipped -Because "Prueba peligrosa omitida por guarda de seguridad."
+        }
+    }
 
     Context "Verificación de Antivirus y Real-Time Protection" {
         It "activa RealTimeProtection si se encuentra deshabilitada" {

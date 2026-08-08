@@ -1,14 +1,15 @@
 BeforeAll {
-    # GUARDA DE SEGURIDAD
-    if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
-        Set-ItResult -Skipped -Because "Prueba de Pester omitida por guarda de seguridad (`$env:ALLOW_HAZARDOUS_TESTS != 'true')."
-        return
-    }
-
     . "$PSScriptRoot\..\..\src\security\Get-BootAttestationStatus.ps1"
 }
 
 Describe "Get-BootAttestationStatus" {
+
+    # GUARDA DE SEGURIDAD: Ubicada DENTRO de Describe
+    BeforeEach {
+        if ($env:ALLOW_HAZARDOUS_TESTS -ne "true") {
+            Set-ItResult -Skipped -Because "Prueba peligrosa omitida por guarda de seguridad."
+        }
+    }
 
     Context "Analisis de capacidad TPM via tpmtool" {
         It "parsea correctamente la salida de tpmtool.exe (array de lineas, fiel a la salida real)" {
