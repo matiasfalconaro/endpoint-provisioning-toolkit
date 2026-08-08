@@ -1,24 +1,24 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica la Baseline de BIOS corporativa en equipos Lenovo ThinkPad.
 .DESCRIPTION
-    Configura parámetros de seguridad UEFI y asigna la contraseña de Supervisor
-    utilizando llamadas CIM/WMI dinámicas, validación de retornos y gestión segura de memoria.
+    Configura parÃ¡metros de seguridad UEFI y asigna la contraseÃ±a de Supervisor
+    utilizando llamadas CIM/WMI dinÃ¡micas, validaciÃ³n de retornos y gestiÃ³n segura de memoria.
 .PARAMETER BiosPassword
-    Contraseña de Supervisor de la BIOS representada como SecureString.
+    ContraseÃ±a de Supervisor de la BIOS representada como SecureString.
 .EXAMPLE
-    .\Set-LenovoBiosBaseline.ps1 -BiosPassword (Read-Host -AsSecureString "Ingrese la contraseña de BIOS")
+    .\Set-LenovoBiosBaseline.ps1 -BiosPassword (Read-Host -AsSecureString "Ingrese la contraseÃ±a de BIOS")
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la contraseña de Supervisor de la BIOS")]
+    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la contraseÃ±a de Supervisor de la BIOS")]
     [System.Security.SecureString]$BiosPassword
 )
 
 $ErrorActionPreference = 'Stop'
 
-# SecureString -> puntero en memoria de ejecución activa
+# SecureString -> puntero en memoria de ejecuciÃ³n activa
 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BiosPassword)
 $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
 
@@ -34,7 +34,7 @@ try {
         "VirtualizationTechnology" = "Enable"        # Intel VT-x / AMD-V
     }
 
-    # Parámetros estándar mediante proveedor CIM/WMI
+    # ParÃ¡metros estÃ¡ndar mediante proveedor CIM/WMI
     foreach ($Setting in $BiosSettings.GetEnumerator()) {
         $Argument = "$($Setting.Key),$($Setting.Value);"
         $Result = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $Argument }
@@ -42,19 +42,19 @@ try {
         if ($Result.return -ne "Success") {
             # Advertencia, no fallo duro: un setting individual no soportado en un
             # modelo puntual no debe abortar toda la baseline.
-            Write-Warning "Falla al aplicar parámetro de BIOS [$($Setting.Key)]: Código de retorno '$($Result.return)'"
+            Write-Warning "Falla al aplicar parÃ¡metro de BIOS [$($Setting.Key)]: CÃ³digo de retorno '$($Result.return)'"
         }
     }
 
-    # Inyección aislada de la contraseña de Supervisor
+    # InyecciÃ³n aislada de la contraseÃ±a de Supervisor
     $PassArgument = "Supervisor Password,Set,$PlainPassword;"
     $PassResult = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SetBiosSetting" -MethodName "SetBiosSetting" -Arguments @{ Parameter = $PassArgument }
 
     if ($PassResult.return -ne "Success") {
-        throw "No se pudo establecer la contraseña de Supervisor en la BIOS. Retorno WMI: $($PassResult.return)"
+        throw "No se pudo establecer la contraseÃ±a de Supervisor en la BIOS. Retorno WMI: $($PassResult.return)"
     }
 
-    # Confirmación y guardado permanente en la NVRAM/microcontrolador
+    # ConfirmaciÃ³n y guardado permanente en la NVRAM/microcontrolador
     $SaveResult = Invoke-CimMethod -Namespace "root\wmi" -ClassName "Lenovo_SaveBiosSettings" -MethodName "SaveBiosSettings"
     if ($SaveResult.return -ne "Success") {
         throw "Falla al persistir los cambios en la NVRAM/microcontrolador. Retorno WMI: $($SaveResult.return)"
@@ -64,7 +64,7 @@ try {
 
 } finally {
     # Purga obligatoria de credenciales en memoria.
-    # Nota: se ejecuta tanto en éxito como en fallo.
+    # Nota: se ejecuta tanto en Ã©xito como en fallo.
     if ($BSTR -ne [System.IntPtr]::Zero) {
         [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
     }

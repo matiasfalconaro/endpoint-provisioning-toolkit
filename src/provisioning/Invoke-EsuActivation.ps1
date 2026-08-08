@@ -1,8 +1,8 @@
-<#
+﻿<#
 .SYNOPSIS
-    Inyecta y activa desatendidamente licencias Extended Security Updates (ESU) vía WMI/CIM.
+    Inyecta y activa desatendidamente licencias Extended Security Updates (ESU) vÃ­a WMI/CIM.
 .DESCRIPTION
-    Aplica una clave de activación por volumen (MAK) ESU, ejecuta la activación en línea
+    Aplica una clave de activaciÃ³n por volumen (MAK) ESU, ejecuta la activaciÃ³n en lÃ­nea
     y valida que el estado de licenciamiento del sistema operativo sea correcto.
 .PARAMETER EsuProductKey
     Clave de producto ESU corporativa en formato 5x5 (AAAAA-BBBBB-CCCCC-DDDDD-EEEEE).

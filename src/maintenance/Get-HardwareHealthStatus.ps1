@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-    Obtiene el estado de salud del hardware (SSD S.M.A.R.T., Batería y BIOS/Firmware).
+    Obtiene el estado de salud del hardware (SSD S.M.A.R.T., BaterÃ­a y BIOS/Firmware).
 .DESCRIPTION
     Consulta la infraestructura CIM/WMI para auditar el desgaste del almacenamiento,
-    salud de la batería y versión de firmware en equipos Lenovo ThinkPad.
+    salud de la baterÃ­a y versiÃ³n de firmware en equipos Lenovo ThinkPad.
 .EXAMPLE
     .\Get-HardwareHealthStatus.ps1
 #>

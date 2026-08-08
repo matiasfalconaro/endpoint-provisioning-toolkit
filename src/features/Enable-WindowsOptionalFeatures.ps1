@@ -1,8 +1,8 @@
-<#
+﻿<#
 .SYNOPSIS
-    Inyección de Características Opcionales de Windows (Offline Image Servicing).
+    InyecciÃ³n de CaracterÃ­sticas Opcionales de Windows (Offline Image Servicing).
 .DESCRIPTION
-    Habilita .NET 4.8, Print-to-PDF y .NET 3.5 (vía SxS Server-Side) y remueve SMBv1, 
+    Habilita .NET 4.8, Print-to-PDF y .NET 3.5 (vÃ­a SxS Server-Side) y remueve SMBv1, 
     PowerShell v2 y XPS en la imagen offline durante la Task Sequence.
 .PARAMETER TargetDrive
     Unidad o ruta del volumen offline del SO
@@ -35,22 +35,22 @@ function Invoke-DismStep {
     $ExitCode = $LASTEXITCODE
 
     if ($ExitCode -ne 0 -and $ExitCode -ne 3010) {
-        throw "Fallo en DISM durante '$Description'. Código de salida: $ExitCode (Args: $($Arguments -join ' '))"
+        throw "Fallo en DISM durante '$Description'. CÃ³digo de salida: $ExitCode (Args: $($Arguments -join ' '))"
     }
 
     if ($ExitCode -eq 3010) {
-        Write-Warning "'$Description' completado, pero requiere reinicio (código 3010)."
+        Write-Warning "'$Description' completado, pero requiere reinicio (cÃ³digo 3010)."
     }
 }
 
-Write-Host "Iniciando Servicing Offline de características opcionales en $TargetDrive..." -ForegroundColor Cyan
+Write-Host "Iniciando Servicing Offline de caracterÃ­sticas opcionales en $TargetDrive..." -ForegroundColor Cyan
 
 # Habilitar .NET Framework 4.8 Advanced Services
 Invoke-DismStep -Description "Habilitar .NET Framework 4.8 Advanced Services" -Arguments @(
     "/Image:$TargetDrive", "/Enable-Feature", "/FeatureName:NetFx4-AdvSvc", "/All", "/NoRestart"
 )
 
-# Habilitar Impresión en PDF de Microsoft
+# Habilitar ImpresiÃ³n en PDF de Microsoft
 Invoke-DismStep -Description "Habilitar Print-to-PDF" -Arguments @(
     "/Image:$TargetDrive", "/Enable-Feature", "/FeatureName:Printing-PrintToPDFServices-Features", "/NoRestart"
 )
@@ -60,7 +60,7 @@ Invoke-DismStep -Description "Deshabilitar SMBv1" -Arguments @(
     "/Image:$TargetDrive", "/Disable-Feature", "/FeatureName:SMB1Protocol", "/NoRestart"
 )
 
-# Deshabilitar PowerShell 2.0 (Prevención de bypass de seguridad)
+# Deshabilitar PowerShell 2.0 (PrevenciÃ³n de bypass de seguridad)
 Invoke-DismStep -Description "Deshabilitar PowerShell 2.0" -Arguments @(
     "/Image:$TargetDrive", "/Disable-Feature", "/FeatureName:MicrosoftWindowsPowerShellv2Root", "/NoRestart"
 )
@@ -70,14 +70,14 @@ Invoke-DismStep -Description "Deshabilitar XPS Writer" -Arguments @(
     "/Image:$TargetDrive", "/Disable-Feature", "/FeatureName:Printing-XPSServices-Features", "/NoRestart"
 )
 
-# Instalación bajo demanda de .NET 3.5 desde el Servidor de Despliegue (SxS)
+# InstalaciÃ³n bajo demanda de .NET 3.5 desde el Servidor de Despliegue (SxS)
 if (Test-Path $SxSPath) {
     Invoke-DismStep -Description "Instalar .NET 3.5 desde SxS" -Arguments @(
         "/Image:$TargetDrive", "/Enable-Feature", "/FeatureName:NetFx3", "/All",
         "/Source:$SxSPath", "/LimitAccess", "/NoRestart"
     )
 } else {
-    Write-Warning "No se encontró el repositorio SxS en '$SxSPath'. .NET 3.5 se mantendrá deshabilitado por seguridad."
+    Write-Warning "No se encontrÃ³ el repositorio SxS en '$SxSPath'. .NET 3.5 se mantendrÃ¡ deshabilitado por seguridad."
 }
 
-Write-Host "Servicing Offline de características completado exitosamente." -ForegroundColor Green
+Write-Host "Servicing Offline de caracterÃ­sticas completado exitosamente." -ForegroundColor Green

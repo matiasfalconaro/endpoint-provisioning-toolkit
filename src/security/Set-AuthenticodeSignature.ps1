@@ -1,13 +1,13 @@
-<#
+﻿<#
 .SYNOPSIS
     Firma digitalmente scripts de PowerShell con un certificado Authenticode o valida su integridad.
 .DESCRIPTION
     Aplica una firma Authenticode utilizando un certificado de la PKI corporativa o verifica
-    que el script esté firmado por un editor de confianza antes de la ejecución de la Task Sequence.
+    que el script estÃ© firmado por un editor de confianza antes de la ejecuciÃ³n de la Task Sequence.
 .PARAMETER ScriptPath
     Ruta del archivo o directorio de scripts PowerShell a firmar o validar.
 .PARAMETER CertificateThumbprint
-    Huella digital (Thumbprint) del certificado Code Signing instalado en el almacén My (Personal).
+    Huella digital (Thumbprint) del certificado Code Signing instalado en el almacÃ©n My (Personal).
 .PARAMETER ValidateOnly
     Si se especifica, solo audita la validez de la firma sin aplicar una nueva.
 .EXAMPLE
@@ -37,22 +37,22 @@ function Invoke-AuthenticodeSigning {
     $ErrorActionPreference = 'Stop'
 
     try {
-        # Modo Validación de Firma (Pre-Execution Check)
+        # Modo ValidaciÃ³n de Firma (Pre-Execution Check)
         if ($ValidateOnly) {
             Write-Output "Verificando firma Authenticode en: $ScriptPath..."
             $Signature = Get-AuthenticodeSignature -FilePath $ScriptPath -ErrorAction Stop
 
             if ($Signature.Status -ne 'Valid') {
-                throw "FALLA DE SEGURIDAD: El script '$ScriptPath' no cuenta con una firma Authenticode válida. Estado: $($Signature.Status) - StatusMessage: $($Signature.StatusMessage)"
+                throw "FALLA DE SEGURIDAD: El script '$ScriptPath' no cuenta con una firma Authenticode vÃ¡lida. Estado: $($Signature.Status) - StatusMessage: $($Signature.StatusMessage)"
             }
 
-            Write-Output "Firma Authenticode VÁLIDA. Firmado por: $($Signature.SignerCertificate.Subject)"
+            Write-Output "Firma Authenticode VÃLIDA. Firmado por: $($Signature.SignerCertificate.Subject)"
             return $true
         }
 
     # Modo Firma de Scripts
         if (-not $CertificateThumbprint) {
-            throw "Debe proporcionar el parámetro -CertificateThumbprint para firmar digitalmente los scripts."
+            throw "Debe proporcionar el parÃ¡metro -CertificateThumbprint para firmar digitalmente los scripts."
         }
 
         if (-not (Test-Path -Path $ScriptPath)) {
@@ -64,7 +64,7 @@ function Invoke-AuthenticodeSigning {
             $Cert = Get-Item -Path "Cert:\CurrentUser\My\$CertificateThumbprint" -ErrorAction SilentlyContinue
         }
         if ($null -eq $Cert) {
-            throw "No se encontró el certificado con Thumbprint '$CertificateThumbprint' en Cert:\LocalMachine\My ni en Cert:\CurrentUser\My."
+            throw "No se encontrÃ³ el certificado con Thumbprint '$CertificateThumbprint' en Cert:\LocalMachine\My ni en Cert:\CurrentUser\My."
         }
 
         Write-Output "Aplicando firma Authenticode con el certificado: $($Cert.Subject)..."
@@ -99,11 +99,11 @@ function Invoke-AuthenticodeSigning {
         }
 
     } catch {
-        throw "ERROR CRÍTICO EN AUTHENTICODE SIGNING: $_"
+        throw "ERROR CRÃTICO EN AUTHENTICODE SIGNING: $_"
     }
 }
 
-# Guarda de invocación
+# Guarda de invocaciÃ³n
 if ($MyInvocation.InvocationName -ne '.') {
     Invoke-AuthenticodeSigning -ScriptPath $ScriptPath `
                                -CertificateThumbprint $CertificateThumbprint `

@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-    Ajuste dinámico de perfiles de energía por factor de forma (Task Sequence Step).
+    Ajuste dinÃ¡mico de perfiles de energÃ­a por factor de forma (Task Sequence Step).
 .DESCRIPTION
-    Evalúa el tipo de chasis vía WMI/CIM durante la Task Sequence y aplica el perfil
-    de energía/hibernación correspondiente.
+    EvalÃºa el tipo de chasis vÃ­a WMI/CIM durante la Task Sequence y aplica el perfil
+    de energÃ­a/hibernaciÃ³n correspondiente.
     Las claves de registro de sistema son gestionadas exclusivamente por GPO On-Premise.
 #>
 

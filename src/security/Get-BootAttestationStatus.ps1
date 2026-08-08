@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-    Audita el estado de Secure Boot, dTPM 2.0 y Measured Boot/Atestación en el endpoint.
+    Audita el estado de Secure Boot, dTPM 2.0 y Measured Boot/AtestaciÃ³n en el endpoint.
 .DESCRIPTION
     Consulta Get-Tpm, Confirm-SecureBootUEFI y tpmtool.exe para verificar la integridad
-    de la cadena de arranque, la capacidad real de atestación remota (Device Health
+    de la cadena de arranque, la capacidad real de atestaciÃ³n remota (Device Health
     Attestation) y la presencia de logs de Measured Boot.
 .EXAMPLE
     .\Get-BootAttestationStatus.ps1
@@ -71,25 +71,25 @@ function Invoke-BootAttestationStatus {
         }
 
         if ($SecureBootActive -ne $true) {
-            throw "SEGURIDAD CRÍTICA: Secure Boot se encuentra DESHABILITADO o no pudo ser verificado en el firmware."
+            throw "SEGURIDAD CRÃTICA: Secure Boot se encuentra DESHABILITADO o no pudo ser verificado en el firmware."
         }
 
         if (-not $TpmInfo.TpmReady) {
-            throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no está listo."
+            throw "SEGURIDAD CRÃTICA: El dTPM 2.0 no estÃ¡ listo."
         }
 
         if ($AttestationCapability.IsCapableForAttestation -ne $true) {
-            throw "SEGURIDAD CRÍTICA: El dTPM 2.0 no soporta Atestación de Hardware (Device Health Attestation)."
+            throw "SEGURIDAD CRÃTICA: El dTPM 2.0 no soporta AtestaciÃ³n de Hardware (Device Health Attestation)."
         }
 
         return $AttestationReport
 
     } catch {
-        throw "Falla durante la auditoría de Secure Boot y Measured Boot: $_"
+        throw "Falla durante la auditorÃ­a de Secure Boot y Measured Boot: $_"
     }
 }
 
-# Guarda de invocación
+# Guarda de invocaciÃ³n
 if ($MyInvocation.InvocationName -ne '.') {
     Invoke-BootAttestationStatus
 }

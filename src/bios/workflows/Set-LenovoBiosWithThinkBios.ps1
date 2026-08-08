@@ -1,11 +1,11 @@
-<#
+﻿<#
 .SYNOPSIS
-    Aplica la Baseline de BIOS mediante el módulo oficial ThinkBios-Config.
+    Aplica la Baseline de BIOS mediante el mÃ³dulo oficial ThinkBios-Config.
 .DESCRIPTION
-    Consume un archivo de configuración cifrado (.ini/.xml) generado por Lenovo
-    Settings Encrypter e invoca el módulo oficial sin exponer variables en memoria.
+    Consume un archivo de configuraciÃ³n cifrado (.ini/.xml) generado por Lenovo
+    Settings Encrypter e invoca el mÃ³dulo oficial sin exponer variables en memoria.
 .PARAMETER ConfigFile
-    Ruta oficial al archivo de configuración de BIOS cifrado.
+    Ruta oficial al archivo de configuraciÃ³n de BIOS cifrado.
 #>
 
 [CmdletBinding()]

@@ -1,8 +1,8 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica la Baseline de BIOS de Lenovo utilizando un secreto cifrado por DPAPI.
 .DESCRIPTION
-    Desencripta la contraseña de BIOS en memoria efímera, la inyecta vía CIM/WMI
+    Desencripta la contraseÃ±a de BIOS en memoria efÃ­mera, la inyecta vÃ­a CIM/WMI
     y garantiza la purga inmediata de memoria.
 #>
 
