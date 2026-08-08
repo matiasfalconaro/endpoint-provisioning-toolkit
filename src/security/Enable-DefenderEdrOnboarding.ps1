@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Valida y ejecuta el onboarding desatendido de Microsoft Defender Antivirus y EDR (XDR).
 .DESCRIPTION
@@ -19,32 +19,32 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    # 1. Verificación y activación del motor Antivirus Defender
+    # 1. VerificaciÃ³n y activaciÃ³n del motor Antivirus Defender
     Write-Output "Verificando el estado de Microsoft Defender Antivirus..."
     $DefenderStatus = Get-MpComputerStatus -ErrorAction Stop
 
     if (-not $DefenderStatus.RealTimeProtectionEnabled) {
-        Write-Output "Habilitando Protección en Tiempo Real..."
+        Write-Output "Habilitando ProtecciÃ³n en Tiempo Real..."
         Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction Stop
     }
 
     if (-not $DefenderStatus.AntivirusEnabled) {
-        throw "SEGURIDAD CRÍTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
+        throw "SEGURIDAD CRÃTICA: Microsoft Defender Antivirus se encuentra deshabilitado."
     }
 
-    # 2. Ejecución de Onboarding EDR / Defender for Endpoint (XDR)
+    # 2. EjecuciÃ³n de Onboarding EDR / Defender for Endpoint (XDR)
     $SenseService = Get-Service -Name "Sense" -ErrorAction SilentlyContinue
 
     if ($null -eq $SenseService -or $SenseService.Status -ne 'Running') {
         if (-not (Test-Path -Path $OnboardingScriptPath)) {
-            throw "No se encontró el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
+            throw "No se encontrÃ³ el script de onboarding de EDR en la ruta: $OnboardingScriptPath"
         }
 
         Write-Output "Ejecutando onboarding desatendido a Defender for Endpoint (EDR)..."
         $Process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$OnboardingScriptPath`"" -Wait -NoNewWindow -PassThru
 
         if ($Process.ExitCode -ne 0) {
-            throw "Falla al ejecutar el onboarding de EDR. Código de salida: $($Process.ExitCode)"
+            throw "Falla al ejecutar el onboarding de EDR. CÃ³digo de salida: $($Process.ExitCode)"
         }
     }
 
@@ -60,5 +60,5 @@ try {
     Write-Output "Microsoft Defender Antivirus y EDR (Sense) validados y activos. Dispositivo enrolado en Defender XDR."
 
 } catch {
-    throw "ERROR CRÍTICO EN ONBOARDING DEFENDER/EDR: $_"
+    throw "ERROR CRÃTICO EN ONBOARDING DEFENDER/EDR: $_"
 }

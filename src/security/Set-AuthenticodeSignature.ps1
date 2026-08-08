@@ -1,13 +1,13 @@
-<#
+﻿<#
 .SYNOPSIS
     Firma digitalmente scripts de PowerShell con un certificado Authenticode o valida su integridad.
 .DESCRIPTION
     Aplica una firma Authenticode utilizando un certificado de la PKI corporativa o verifica
-    que el script esté firmado por un editor de confianza antes de la ejecución de la Task Sequence.
+    que el script estÃ© firmado por un editor de confianza antes de la ejecuciÃ³n de la Task Sequence.
 .PARAMETER ScriptPath
     Ruta del archivo o directorio de scripts PowerShell a firmar o validar.
 .PARAMETER CertificateThumbprint
-    Huella digital (Thumbprint) del certificado Code Signing instalado en el almacén My (Personal).
+    Huella digital (Thumbprint) del certificado Code Signing instalado en el almacÃ©n My (Personal).
 .PARAMETER ValidateOnly
     Si se especifica, solo audita la validez de la firma sin aplicar una nueva.
 .EXAMPLE
@@ -29,22 +29,22 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    # 1. Modo Validación de Firma (Pre-Execution Check)
+    # 1. Modo ValidaciÃ³n de Firma (Pre-Execution Check)
     if ($ValidateOnly) {
         Write-Output "Verificando firma Authenticode en: $ScriptPath..."
         $Signature = Get-AuthenticodeSignature -FilePath $ScriptPath -ErrorAction Stop
 
         if ($Signature.Status -ne 'Valid') {
-            throw "FALLA DE SEGURIDAD: El script '$ScriptPath' no cuenta con una firma Authenticode válida. Estado: $($Signature.Status) - StatusMessage: $($Signature.StatusMessage)"
+            throw "FALLA DE SEGURIDAD: El script '$ScriptPath' no cuenta con una firma Authenticode vÃ¡lida. Estado: $($Signature.Status) - StatusMessage: $($Signature.StatusMessage)"
         }
 
-        Write-Output "Firma Authenticode VÁLIDA. Firmado por: $($Signature.SignerCertificate.Subject)"
+        Write-Output "Firma Authenticode VÃLIDA. Firmado por: $($Signature.SignerCertificate.Subject)"
         return $true
     }
 
     # 2. Modo Firma de Scripts
     if (-not $CertificateThumbprint) {
-        throw "Debe proporcionar el parámetro -CertificateThumbprint para firmar digitalmente los scripts."
+        throw "Debe proporcionar el parÃ¡metro -CertificateThumbprint para firmar digitalmente los scripts."
     }
 
     $Cert = Get-Item -Path "Cert:\LocalMachine\My\$CertificateThumbprint" -ErrorAction SilentlyContinue
@@ -70,5 +70,5 @@ try {
     }
 
 } catch {
-    throw "ERROR CRÍTICO EN AUTHERNTICODE SIGNING: $_"
+    throw "ERROR CRÃTICO EN AUTHERNTICODE SIGNING: $_"
 }

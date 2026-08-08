@@ -1,11 +1,11 @@
-<#
+﻿<#
 .SYNOPSIS
-    Ejecuta el borrado seguro criptográfico de almacenamiento en fase de decomisionamiento.
+    Ejecuta el borrado seguro criptogrÃ¡fico de almacenamiento en fase de decomisionamiento.
 .DESCRIPTION
-    Invoca la instrucción nativa de sanitización de disco de Lenovo UEFI a través de CIM/WMI
-    requiriendo la contraseña de Supervisor para autorizar la destrucción segura de datos.
+    Invoca la instrucciÃ³n nativa de sanitizaciÃ³n de disco de Lenovo UEFI a travÃ©s de CIM/WMI
+    requiriendo la contraseÃ±a de Supervisor para autorizar la destrucciÃ³n segura de datos.
 .PARAMETER SupervisorPassword
-    Contraseña de Supervisor de BIOS configurada en el equipo como SecureString.
+    ContraseÃ±a de Supervisor de BIOS configurada en el equipo como SecureString.
 .EXAMPLE
     .\Invoke-LenovoDriveWipe.ps1 -SupervisorPassword $SecurePass
 #>

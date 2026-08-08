@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-    Ejecutor de pruebas de cumplimiento e integración para la Task Sequence.
+    Ejecutor de pruebas de cumplimiento e integraciÃ³n para la Task Sequence.
 .DESCRIPTION
     Invoca la suite de pruebas Pester, exporta el reporte en formato NUnit XML al servidor NAS
-    y devuelve exit code 0 (Éxito) o exit code 1 (Si alguna prueba de cumplimiento falla).
+    y devuelve exit code 0 (Ã‰xito) o exit code 1 (Si alguna prueba de cumplimiento falla).
 #>
 
 [CmdletBinding()]
@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    # 1. Asegurar la presencia del módulo Pester (o importar desde el Deployment Share)
+    # 1. Asegurar la presencia del mÃ³dulo Pester (o importar desde el Deployment Share)
     if (-not (Get-Module -Name Pester -ListAvailable)) {
         Import-Module "\\NAS-CORP01\Deployment\Tools\Pester\Pester.psm1" -ErrorAction Stop
     }
@@ -25,7 +25,7 @@ try {
 
     Write-Output "Iniciando Suite de Pruebas de Cumplimiento Automatizado Pester..."
 
-    # 2. Configurar la ejecución de Pester 5.x
+    # 2. Configurar la ejecuciÃ³n de Pester 5.x
     $PesterConfig = [PesterConfiguration]::Default
     $PesterConfig.Run.Path = "$PSScriptRoot\Test-DeploymentCompliance.Tests.ps1"
     $PesterConfig.TestResult.Enabled = $true
@@ -36,13 +36,13 @@ try {
     # 3. Ejecutar Pester
     $Result = Invoke-Pester -Configuration $PesterConfig
 
-    # 4. Evaluación de Criterios
+    # 4. EvaluaciÃ³n de Criterios
     if ($Result.FailedCount -gt 0) {
-        throw "FALLA DE CUMPLIMIENTO: $($Result.FailedCount) prueba(s) automatizada(s) no pasaron la validación. Reporte guardado en: $OutputFile"
+        throw "FALLA DE CUMPLIMIENTO: $($Result.FailedCount) prueba(s) automatizada(s) no pasaron la validaciÃ³n. Reporte guardado en: $OutputFile"
     }
 
     Write-Output "TODAS LAS PRUEBAS DE CUMPLIMIENTO PASARON EXITOSAMENTE ($($Result.PassedCount)/$($Result.TotalCount)). Reporte generado en: $OutputFile"
 
 } catch {
-    throw "ERROR CRÍTICO EN VALIDACIÓN DE INFRAESTRUCTURA: $_"
+    throw "ERROR CRÃTICO EN VALIDACIÃ“N DE INFRAESTRUCTURA: $_"
 }

@@ -1,13 +1,13 @@
-<#
+﻿<#
 .SYNOPSIS
-    Depuración Server-Side de paquetes AppX provisionados (Image Servicing Offline).
+    DepuraciÃ³n Server-Side de paquetes AppX provisionados (Image Servicing Offline).
 .DESCRIPTION
     Remueve paquetes no corporativos directamente de la imagen de Windows montada/aplicada
     durante la fase WinPE de la Task Sequence.
 .PARAMETER TargetDrive
     Unidad o ruta del volumen del sistema operativo offline o imagen montada.
     Nota: -Path en Remove-AppxProvisionedPackage opera sobre el volumen offline
-    accedido desde WinPE. Para imágenes WIM montadas con DISM /Mount-Image,
+    accedido desde WinPE. Para imÃ¡genes WIM montadas con DISM /Mount-Image,
     pasar la ruta de montaje en vez de la letra de unidad.
 #>
 

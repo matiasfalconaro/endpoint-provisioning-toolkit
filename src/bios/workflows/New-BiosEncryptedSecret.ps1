@@ -1,14 +1,14 @@
-<#
+﻿<#
 .SYNOPSIS
-    Genera un secreto cifrado vía DPAPI para la contraseña de BIOS.
+    Genera un secreto cifrado vÃ­a DPAPI para la contraseÃ±a de BIOS.
 .DESCRIPTION
     Convierte una entrada SecureString en un archivo cifrado con DPAPI para
     ejecuciones desatendidas. Requiere ensamblado System.Security (incluido
     en .NET Framework / Windows PowerShell 5.1 pero no cargado por defecto).
 .PARAMETER BiosPassword
-    Contraseña de BIOS representada como SecureString.
+    ContraseÃ±a de BIOS representada como SecureString.
 .PARAMETER OutputPath
-    Ruta donde se guardará el archivo de secreto cifrado.
+    Ruta donde se guardarÃ¡ el archivo de secreto cifrado.
 #>
 
 [CmdletBinding()]
