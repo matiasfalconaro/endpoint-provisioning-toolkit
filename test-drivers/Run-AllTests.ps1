@@ -324,6 +324,20 @@ try {
         Result            = if ($Test9Pass) { "PASS" } else { "FAIL" }
     }
 
+    # Test 10: Get-PerformanceHealthStatus - excepcion terminante real de CIM/WMI
+    Write-Host "`n=== Ejecutando: Test 10 - Performance excepcion CIM terminante ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test10-performance-cimfail.ps1'" | Out-Null
+    $Test10ExitCode = $LASTEXITCODE
+    $Test10Pass = ($Test10ExitCode -eq 0)
+    Write-Host "Exit code: $Test10ExitCode (se espera 0 - el mock confirma que el script aborta ante la excepcion CIM)" -ForegroundColor $(if ($Test10Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 10 - Performance excepcion CIM terminante"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test10ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test10Pass) { "PASS" } else { "FAIL" }
+    }
+
 } finally {
     # Restauración garantizada del manifiesto real
     if (Test-Path $ManifestBackupPath) {

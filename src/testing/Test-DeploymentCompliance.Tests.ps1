@@ -146,4 +146,54 @@ Describe "Auditoría Global de Conformidad de Infraestructura" {
             $TempFolderExists | Should -BeFalse
         }
     }
+
+    Context "7. Rendimiento y Salud Térmica (Post-Despliegue)" {
+
+        It "La temperatura de la CPU en estado idle no debe superar el umbral crítico" {
+            $ThermalZone = Get-CimInstance -Namespace "root\wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+
+            if ($null -eq $ThermalZone) {
+                Set-ItResult -Skipped -Because "MSAcpi_ThermalZoneTemperature no esta expuesto por este fabricante/modelo de hardware."
+                return
+            }
+
+            $TemperatureCelsius = [math]::Round(($ThermalZone.CurrentTemperature / 10) - 273.15, 1)
+            $TemperatureCelsius | Should -BeLessThan 85 -Because "una temperatura idle >= 85C indica falla de disipacion o pasta termica degradada"
+        }
+
+        It "El throughput de lectura del SSD/NVMe debe estar dentro del margen esperado para el modelo" {
+            $PhysicalDisk = Get-PhysicalDisk -ErrorAction SilentlyContinue |
+                Where-Object { $_.BusType -in @('NVMe', 'SATA') } |
+                Select-Object -First 1
+
+            $DiskPerfCounter = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfDisk_PhysicalDisk -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -notmatch '_Total' } |
+                Select-Object -First 1
+
+            if ($null -eq $PhysicalDisk -or $null -eq $DiskPerfCounter) {
+                Set-ItResult -Skipped -Because "No se pudo resolver el disco fisico o sus contadores de rendimiento en este equipo."
+                return
+            }
+
+            $DiskReadMBs = [math]::Round($DiskPerfCounter.DiskReadBytesPersec / 1MB, 1)
+            $ExpectedMinThroughput = if ($PhysicalDisk.BusType -eq 'NVMe') { 3000 } else { 450 }
+
+            $DiskReadMBs | Should -BeGreaterOrEqual $ExpectedMinThroughput `
+                -Because "el modelo $($PhysicalDisk.Model) ($($PhysicalDisk.BusType)) deberia sostener al menos $ExpectedMinThroughput MB/s"
+        }
+
+        It "El uso de CPU en estado idle post-primer-arranque no debe reflejar procesos anomalos en segundo plano" {
+            $CpuCounter = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -eq '_Total' }
+
+            if ($null -eq $CpuCounter) {
+                Set-ItResult -Skipped -Because "Win32_PerfFormattedData_PerfOS_Processor no disponible en este equipo."
+                return
+            }
+
+            $CpuCounter.PercentProcessorTime | Should -BeLessThan 20 `
+                -Because "un uso de CPU idle >= 20% tras el despliegue sugiere procesos de instalacion/indexado aun activos o malware"
+        }
+    }
 }
