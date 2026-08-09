@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Validacion Estricta: replica el flujo real de produccion, exigiendo
     OBLIGATORIAMENTE las validaciones de integridad SHA-256 y firma Authenticode.
@@ -26,7 +26,7 @@ if ($env:ALLOW_HAZARDOUS_TESTS -ne 'true') {
 }
 
 $ErrorActionPreference = 'Stop'
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).ProviderPath
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).ProviderPath
 $TempRoot = Join-Path $env:TEMP "strict-validation-test-$(Get-Random)"
 $Cert = $null
 

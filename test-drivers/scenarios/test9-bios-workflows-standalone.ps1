@@ -4,7 +4,7 @@
 #>
 
 $ErrorActionPreference = 'Stop'
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).ProviderPath
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).ProviderPath
 
 # Dot-sourcing de los scripts refactorizados
 . (Join-Path $RepoRoot "src\bios\workflows\New-BiosEncryptedSecret.ps1")

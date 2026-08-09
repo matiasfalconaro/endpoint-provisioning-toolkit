@@ -8,8 +8,8 @@
     2. Ejecuta PSScriptAnalyzer sobre la carpeta src/ para verificar calidad de código.
     3. Ejecuta los unit tests con Pester + Mock para los scripts de seguridad y hardware
        ubicados en test-drivers/unit-tests/.
-    4. Ejecuta los escenarios de integración de test-drivers/ (Test 0 a Test 8) como procesos
-       hijos aislados.
+    4. Ejecuta los escenarios de integracion ubicados en test-drivers/scenarios/ (Test 0 a Test 11)
+       como procesos hijos aislados.
     5. Compara exit code y logs, restaura manifest.json y muestra un resumen general PASS/FAIL.
 .PARAMETER RepoRoot
     Raíz del repositorio. Si se omite, se resuelve automáticamente en base a
@@ -44,6 +44,7 @@ $ManifestPath = Join-Path $RepoRoot "manifest.json"
 $ManifestBackupPath = Join-Path $RepoRoot "manifest.backup.json"
 $FallbackLogDir = "C:\Windows\Temp\DeploymentLogs"
 $SrcPath = Join-Path $RepoRoot "src"
+$ScenariosPath = Join-Path $PSScriptRoot "scenarios"
 $Results = @()
 
 # ETAPA PREVIA 1: NORMALIZACIÓN DE ENCODING (opt-in)
@@ -96,7 +97,7 @@ if (Test-Path $UnitTestsPath) {
 
         $PesterConfig = [PesterConfiguration]::Default
         $PesterConfig.Run.Path = $UnitTestsPath
-        $PesterConfig.Run.PassThru = $true  # <--- AGREGAR ESTA LÍNEA
+        $PesterConfig.Run.PassThru = $true
         $PesterConfig.Output.Verbosity = 'Detailed'
         $PesterConfig.TestResult.Enabled = $true
         $PesterConfig.TestResult.OutputPath = Join-Path $PSScriptRoot "logs\pester-results.xml"
@@ -151,13 +152,12 @@ function Invoke-TestDriver {
 
     Write-Host "`n=== Ejecutando: $Name ===" -ForegroundColor Cyan
 
-    $DriverPath = Join-Path $PSScriptRoot $DriverScript
+    $DriverPath = Join-Path $ScenariosPath $DriverScript
     if (-not (Test-Path $DriverPath)) {
         throw "No se encontró el driver: $DriverPath"
     }
 
-    # Se captura stdout del proceso hijo además de dejarlo pasar a consola,
-    # (parte del diagnóstico real nunca llega al archivo de log del wrapper)
+    # Se captura stdout del proceso hijo ademas de dejarlo pasar a consola
     $RawOutput = powershell -NoProfile -ExecutionPolicy Bypass -File $DriverPath 2>&1
     $RawOutput | ForEach-Object { Write-Host $_ }
     $ActualExitCode = $LASTEXITCODE
@@ -200,8 +200,7 @@ function Invoke-TestDriver {
 
 # BATERÍA DE PRUEBAS DE INTEGRACIÓN
 try {
-    # Precondición: respaldo del manifiesto real
-    # Todo lo que sigue asume que este backup existe y es restaurable
+    # Precondicion: respaldo del manifiesto real
     if (-not (Test-Path $ManifestPath)) {
         Write-Host "manifest.json no existe, generando uno nuevo..." -ForegroundColor Yellow
         & (Join-Path $RepoRoot "src\security\Confirm-ScriptIntegrity.ps1") `
@@ -238,7 +237,6 @@ try {
         -DriverScript "test3-tamper.ps1" `
         -ExpectedExitCode 1 `
         -ExpectedLogPattern "FALLA DE INTEGRIDAD"
-    # Restauración inmediata, no depender solo del finally general para este paso puntual
     Copy-Item $ManifestBackupPath $ManifestPath -Force
 
     # Test 4: proceso externo falla
@@ -248,7 +246,6 @@ try {
         -ExpectedLogPattern "código de salida 87"
 
     # Test 5: persistencia de logs de fallback
-    # Se excluyen los archivos RAWOUTPUT_* para no contar dos veces el mismo warning
     $AllLogs = Get-ChildItem -Path $FallbackLogDir -Filter "*.log" -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -notlike "RAWOUTPUT_*" }
     $FallbackWarnings = 0
@@ -270,7 +267,7 @@ try {
 
     # Test 6: bug histórico de propagación de errores en BIOS
     Write-Host "`n=== Ejecutando: Test 6 - Bug histórico BIOS (referencia, standalone) ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test6-bios-buggy-standalone.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test6-bios-buggy-standalone.ps1'" | Out-Null
     $Test6ExitCode = $LASTEXITCODE
     $Test6Pass = ($Test6ExitCode -eq 0)
     Write-Host "Exit code: $Test6ExitCode (se espera 0 - confirma que el mock buggy reproduce el problema histórico)" -ForegroundColor $(if ($Test6Pass) {"Yellow"} else {"Red"})
@@ -284,7 +281,7 @@ try {
 
     # Test 7: script de BIOS con el fix real, standalone
     Write-Host "`n=== Ejecutando: Test 7 - Propagación correcta BIOS (fix real, standalone) ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test7-bios-fixed-standalone.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test7-bios-fixed-standalone.ps1'" | Out-Null
     $Test7ExitCode = $LASTEXITCODE
     $Test7Pass = ($Test7ExitCode -eq 1)
     Write-Host "Exit code: $Test7ExitCode (esperado: 1)" -ForegroundColor $(if ($Test7Pass) {"Green"} else {"Red"})
@@ -298,7 +295,7 @@ try {
 
     # Test 8: Enable-WindowsOptionalFeatures.ps1 captura $LASTEXITCODE de DISM
     Write-Host "`n=== Ejecutando: Test 8 - Enable-WindowsOptionalFeatures captura LASTEXITCODE ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test8-features-exitcode.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test8-features-exitcode.ps1'" | Out-Null
     $Test8ExitCode = $LASTEXITCODE
     $Test8Pass = ($Test8ExitCode -ne 0)
     Write-Host "Exit code: $Test8ExitCode (se espera distinto de 0 - DISM simulado falla en Paso 2)" -ForegroundColor $(if ($Test8Pass) {"Green"} else {"Red"})
@@ -312,7 +309,7 @@ try {
 
     # Test 9: workflows de BIOS - propagacion de errores ante rutas inexistentes
     Write-Host "`n=== Ejecutando: Test 9 - Workflows BIOS propagacion de errores ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test9-bios-workflows-standalone.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test9-bios-workflows-standalone.ps1'" | Out-Null
     $Test9ExitCode = $LASTEXITCODE
     $Test9Pass = ($Test9ExitCode -eq 0)
     Write-Host "Exit code: $Test9ExitCode (esperado: 0)" -ForegroundColor $(if ($Test9Pass) {"Green"} else {"Red"})
@@ -326,7 +323,7 @@ try {
 
     # Test 10: Get-PerformanceHealthStatus - excepcion terminante real de CIM/WMI
     Write-Host "`n=== Ejecutando: Test 10 - Performance excepcion CIM terminante ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test10-performance-cimfail.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test10-performance-cimfail.ps1'" | Out-Null
     $Test10ExitCode = $LASTEXITCODE
     $Test10Pass = ($Test10ExitCode -eq 0)
     Write-Host "Exit code: $Test10ExitCode (se espera 0 - el mock confirma que el script aborta ante la excepcion CIM)" -ForegroundColor $(if ($Test10Pass) {"Green"} else {"Red"})
@@ -338,10 +335,9 @@ try {
         Result            = if ($Test10Pass) { "PASS" } else { "FAIL" }
     }
 
-    # Test 11: Validacion Estricta - integridad SHA-256 y firma Authenticode reales,
-    # sin ningun flag de omision (simula el flujo completo de produccion).
+    # Test 11: Validacion Estricta - integridad SHA-256 y firma Authenticode reales
     Write-Host "`n=== Ejecutando: Test 11 - Validacion Estricta (SHA-256 + Authenticode reales) ===" -ForegroundColor Cyan
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test11-strict_validation.ps1'" | Out-Null
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test11-strict_validation.ps1'" | Out-Null
     $Test11ExitCode = $LASTEXITCODE
     $Test11Pass = ($Test11ExitCode -eq 0)
     Write-Host "Exit code: $Test11ExitCode (esperado: 0)" -ForegroundColor $(if ($Test11Pass) {"Green"} else {"Red"})
@@ -354,7 +350,7 @@ try {
     }
 
 } finally {
-    # Restauración garantizada del manifiesto real
+    # Restauracion garantizada del manifiesto real
     if (Test-Path $ManifestBackupPath) {
         Copy-Item $ManifestBackupPath $ManifestPath -Force
         Remove-Item $ManifestBackupPath -Force
@@ -363,19 +359,16 @@ try {
 
     # Persistencia de logs de esta corrida
     if (Test-Path $FallbackLogDir) {
-        # Crear explícitamente el directorio si no existe
         $LogDirTarget = Join-Path $PSScriptRoot "logs"
         if (-not (Test-Path $LogDirTarget)) {
             New-Item -Path $LogDirTarget -ItemType Directory -Force | Out-Null
         }
 
-        # Definir la ruta correcta sin duplicar 'test-drivers'
         $DatabasePath = Join-Path $LogDirTarget "dev-test-logs.db"
         $RunId = Get-Date -Format "yyyyMMdd_HHmmss"
 
         $Persisted = $false
         try {
-            # Asegurar importación del módulo previo a la llamada
             Import-Module (Join-Path $PSScriptRoot "TestResultsDb.psm1") -ErrorAction Stop
             $Persisted = Save-TestLogsToSqlite -LogDir $FallbackLogDir -DatabasePath $DatabasePath -RunId $RunId
         } catch {
