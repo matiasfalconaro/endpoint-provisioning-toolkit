@@ -16,6 +16,8 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 ### Changed
 - Renombrado de `test0` para explicitar su uso exclusivo en depuración local omitiendo controles de seguridad.
 - Traslado de escenarios de integración a la subcarpeta `scenarios/` para mejorar la organización visual del directorio.
+- Reemplazo de llamadas genéricas de borrado en decomisionamiento por métodos nativos y sobreescritura verificada bajo el estándar.
+- Incorporar soporte de parámetros explícitos y validación previa de tipo de bus en `Invoke-LenovoDriveWipe.ps1`.
 
 ---
 
