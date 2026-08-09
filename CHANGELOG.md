@@ -11,6 +11,10 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Auditoría de rendimiento y salud térmica post-despliegue (CPU, temperatura, throughput NVMe/SATA).
 - Test de regresión para propagación de excepción CIM/WMI terminante en la auditoría de rendimiento.
 - Auditoría de logons interactivos post-OOBE (EventID 4624, LogonType interactivo) para validar la métrica Zero-Touch/Touchless.
+- Nuevo test driver `test11` para validar políticas de hashes SHA-256 y firma Authenticode simulanda.
+
+### Changed
+- Renombrado de `test0` para explicitar su uso exclusivo en depuración local omitiendo controles de seguridad.
 
 ---
 
