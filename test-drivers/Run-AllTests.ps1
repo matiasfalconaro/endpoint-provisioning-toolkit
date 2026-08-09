@@ -215,8 +215,8 @@ try {
     }
 
     # Test 0: happy path (skips)
-    Invoke-TestDriver -Name "Test 0 - Happy Path (skips)" `
-        -DriverScript "test0-happypath.ps1" `
+    Invoke-TestDriver -Name "Test 0 - Skipping Security Checks (uso exclusivo para debugging)" `
+        -DriverScript "test0-skipping_security_checks.ps1" `
         -ExpectedExitCode 0 `
         -ExpectedLogPattern "Tarea completada exitosamente."
 
@@ -336,6 +336,21 @@ try {
         ActualExitCode    = $Test10ExitCode
         LogPatternMatched = "N/A"
         Result            = if ($Test10Pass) { "PASS" } else { "FAIL" }
+    }
+
+    # Test 11: Validacion Estricta - integridad SHA-256 y firma Authenticode reales,
+    # sin ningun flag de omision (simula el flujo completo de produccion).
+    Write-Host "`n=== Ejecutando: Test 11 - Validacion Estricta (SHA-256 + Authenticode reales) ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$PSScriptRoot\test11-strict_validation.ps1'" | Out-Null
+    $Test11ExitCode = $LASTEXITCODE
+    $Test11Pass = ($Test11ExitCode -eq 0)
+    Write-Host "Exit code: $Test11ExitCode (esperado: 0)" -ForegroundColor $(if ($Test11Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 11 - Validacion Estricta (SHA-256 + Authenticode)"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test11ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test11Pass) { "PASS" } else { "FAIL" }
     }
 
 } finally {
