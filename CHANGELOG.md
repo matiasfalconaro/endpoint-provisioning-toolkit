@@ -5,15 +5,16 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 [Version] - Fecha - [Rama] - [Estado]
 
-## [1.2.2] - 2026-07-28 - [main] - [Unreleased]
+## [1.4.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
 - Auditoría de rendimiento y salud térmica post-despliegue (CPU, temperatura, throughput NVMe/SATA).
 - Test de regresión para propagación de excepción CIM/WMI terminante en la auditoría de rendimiento.
+- Auditoría de logons interactivos post-OOBE (EventID 4624, LogonType interactivo) para validar la métrica Zero-Touch/Touchless.
 
 ---
 
-## [1.2.1] - 2026-07-28 - [main] - [Unreleased]
+## [1.3.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
 - Suites de pruebas unitarias con Pester v5.x y Mocks para interceptar cmdlets sensibles del sistema.
