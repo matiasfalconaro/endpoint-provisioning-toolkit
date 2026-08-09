@@ -14,25 +14,25 @@ $env:ALLOW_HAZARDOUS_TESTS = "true"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\test-drivers\Run-AllTests.ps1
 ```
 
-Nota (Guarda de Seguridad):
+**Nota (Guarda de Seguridad):**
 Para evitar ejecuciones accidentales en entornos locales, los scripts de prueba sensibles y suites de Pester cuentan con Guard Clause. Si la variable de entorno `$env:ALLOW_HAZARDOUS_TESTS` no tiene el valor `"true"`, la prueba se omitirá automáticamente con estado SKIPPED o abortará limpiamente sin alterar el sistema ni interrumpir la suite global.
 
-Nota (Pester Mock):
+**Nota (Pester Mock):**
 Los scripts en `src/security/` tocan cmdlets sensibles del sistema. Para prevenir la alteración del entorno de desarrollo, el orquestador ejecuta los tests unitarios mediante Pester Interception sobre funciones encapsuladas. Si el módulo Pester no está disponible en el sistema, la etapa reportará estado SKIPPED sin bloquear los tests de integración.
 
-Nota (Pester Mock):
+**Nota (Pester Mock):**
 Los scripts en src/security/ tocan cmdlets sensibles del sistema (ej. Enable-BitLocker, Set-MpPreference). Para prevenir la alteración del entorno de desarrollo, el orquestador ejecuta los tests unitarios mediante Pester Interception (Mocks) sobre funciones encapsuladas (invocation guards). Si el módulo Pester no está disponible en el sistema, la etapa reportará estado SKIPPED sin bloquear los tests de integración.
 
-Nota sobre el Test 1:
+**Nota sobre el Test 1:**
 Es normal que falle si existen cambios pendientes de registrar en manifest.json. En CI se resuelve automáticamente al mergear a main. Para forzar el paso local antes de un commit:
 ```
 .\src\security\Confirm-ScriptIntegrity.ps1 -Action Generate -ManifestPath .\manifest.json
 ```
 
-Nota sobre el test6:
+**Nota sobre el test6:**
 "PASS" confirma que el mock buggy sigue reproduciendo el bug histórico (ExitCode: 0 ante falla real). Es una prueba de regresión; la corrección efectiva se valida en el Test 7.
 
-Nota sobre mocks con Add-Member:
+**Nota sobre mocks con Add-Member:**
 En Pester v6, un `[PSCustomObject]@{}` sin propiedades de datos es tratado como "vacío" por `Should -BeNullOrEmpty`, aunque tenga métodos agregados vía `Add-Member`.
 Los mocks que simulan objetos con contenido deben inicializarse con al menos una propiedad real.
 
@@ -50,7 +50,7 @@ Los mocks que simulan objetos con contenido deben inicializarse con al menos una
 |Test       |Nombre del Escenario                                |Resultado Esperado en Desarrollo|
 |-----------|----------------------------------------------------|--------------------------------|
 |Pester Unit|Unit tests seguridad, rendimiento y touchless       |PASS (0 fallidos)               |
-|Test 0     |Happy Path (Bypasses)                               |PASS (ExitCode: 0)              |
+|Test 0     |Skipping Security Checks (solo debugging)           |PASS (ExitCode: 0)              |
 |Test 1     |Happy Path (Integridad Real)                        |FAIL (Esperado)                 |
 |Test 2     |Validación sin ScriptPath                           |PASS (ExitCode: 1)              |
 |Test 3     |Detección de Manifiesto Alterado                    |PASS (ExitCode: 1)              |
@@ -61,3 +61,4 @@ Los mocks que simulan objetos con contenido deben inicializarse con al menos una
 |Test 8     |Features DISM — Captura de Exit Code                |PASS (ExitCode ≠ 0)             |
 |Test 9     |Workflows BIOS — Propagación ante Rutas Inexistentes|PASS (ExitCode: 0)              |
 |Test 10    |Performance — Excepción CIM Terminante              |PASS (ExitCode: 0)              |
+|Test 11    |Validación Estricta — SHA-256 + Authenticode reales |PASS (ExitCode: 0)              |
