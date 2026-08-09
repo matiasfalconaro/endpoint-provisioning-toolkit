@@ -8,7 +8,7 @@
     2. Ejecuta PSScriptAnalyzer sobre la carpeta src/ para verificar calidad de código.
     3. Ejecuta los unit tests con Pester + Mock para los scripts de seguridad y hardware
        ubicados en test-drivers/unit-tests/.
-    4. Ejecuta los escenarios de integracion ubicados en test-drivers/scenarios/ (Test 0 a Test 11)
+    4. Ejecuta los escenarios de integracion ubicados en test-drivers/scenarios/ (Test 0 a Test 12)
        como procesos hijos aislados.
     5. Compara exit code y logs, restaura manifest.json y muestra un resumen general PASS/FAIL.
 .PARAMETER RepoRoot
@@ -347,6 +347,20 @@ try {
         ActualExitCode    = $Test11ExitCode
         LogPatternMatched = "N/A"
         Result            = if ($Test11Pass) { "PASS" } else { "FAIL" }
+    }
+
+    # Test 12: Drive Wipe NIST SP 800-88 Rev. 1 - Validacion de metodos Purge/Clear
+    Write-Host "`n=== Ejecutando: Test 12 - Drive Wipe NIST SP 800-88 Rev. 1 ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test12-drivewipe-nist.ps1'" | Out-Null
+    $Test12ExitCode = $LASTEXITCODE
+    $Test12Pass = ($Test12ExitCode -eq 0)
+    Write-Host "Exit code: $Test12ExitCode (se espera 0 - confirma la correcta evaluacion de metodos NIST)" -ForegroundColor $(if ($Test12Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 12 - Drive Wipe NIST SP 800-88 Rev. 1"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test12ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test12Pass) { "PASS" } else { "FAIL" }
     }
 
 } finally {
