@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Mock de prueba para Invoke-LenovoDriveWipe.ps1 (Test 12 - Run-AllTests.ps1).
 .DESCRIPTION
@@ -59,7 +59,7 @@ function global:Invoke-CimMethod {
 # Ejecución de la prueba
 try {
     # Carga del script oficial de seguridad
-    . "$PSScriptRoot\..\..\src\security\Invoke-LenovoDriveWipe.ps1"
+    . "$PSScriptRoot\..\..\src\maintenance\Invoke-LenovoDriveWipe.ps1"
 
     if (-not (Get-Command Invoke-SecureDriveWipe -ErrorAction SilentlyContinue)) {
         Write-Host "ERROR DE SETUP: Invoke-LenovoDriveWipe.ps1 no se pudo cargar (verificar ruta)." -ForegroundColor Red
