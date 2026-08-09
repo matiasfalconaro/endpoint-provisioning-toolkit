@@ -2,7 +2,7 @@
 Para:
 - Auditoría estática de código con `PSScriptAnalyzer`
 - Normalización opcional de codificación a `UTF-8 con BOM` (`-FixEncoding`)
-- Pruebas unitarias de seguridad aisladas con Pester + Mocks (BitLocker, Defender EDR, Boot Attestation, Authenticode)
+- Pruebas unitarias aisladas con Pester + Mocks (BitLocker, Defender EDR, Boot Attestation, Authenticode, Rendimiento/Térmica, Auditoría Touchless)
 - Batería completa de pruebas unitarias/integración y consolidación de logs en SQLite (`dev-test-logs.db`)
 
 ```powershell
@@ -32,6 +32,10 @@ Es normal que falle si existen cambios pendientes de registrar en manifest.json.
 Nota sobre el test6:
 "PASS" confirma que el mock buggy sigue reproduciendo el bug histórico (ExitCode: 0 ante falla real). Es una prueba de regresión; la corrección efectiva se valida en el Test 7.
 
+Nota sobre mocks con Add-Member:
+En Pester v6, un `[PSCustomObject]@{}` sin propiedades de datos es tratado como "vacío" por `Should -BeNullOrEmpty`, aunque tenga métodos agregados vía `Add-Member`.
+Los mocks que simulan objetos con contenido deben inicializarse con al menos una propiedad real.
+
 ## Calidad y Reglas de Código
 - `PSScriptAnalyzer` Integrado automáticamente en `Run-AllTests.ps1`.
 - Todos los scripts de prueba unitarios, standalone y Mocks con potencial impacto en hardware o configuración del sistema requieren la variable `$env:ALLOW_HAZARDOUS_TESTS = "true"` para ejecutarse. En tests de Pester reportan SKIPPED si la variable está ausente.
@@ -45,7 +49,7 @@ Nota sobre el test6:
 ## Escenarios de Prueba Evaluados
 |Test       |Nombre del Escenario                                |Resultado Esperado en Desarrollo|
 |-----------|----------------------------------------------------|--------------------------------|
-|Pester Unit|Unit tests seguridad (BitLocker, EDR, Boot, Sign)   |PASS (0 fallidos)               |
+|Pester Unit|Unit tests seguridad, rendimiento y touchless       |PASS (0 fallidos)               |
 |Test 0     |Happy Path (Bypasses)                               |PASS (ExitCode: 0)              |
 |Test 1     |Happy Path (Integridad Real)                        |FAIL (Esperado)                 |
 |Test 2     |Validación sin ScriptPath                           |PASS (ExitCode: 1)              |

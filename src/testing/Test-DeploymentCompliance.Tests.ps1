@@ -196,4 +196,37 @@ Describe "Auditoría Global de Conformidad de Infraestructura" {
                 -Because "un uso de CPU idle >= 20% tras el despliegue sugiere procesos de instalacion/indexado aun activos o malware"
         }
     }
+
+    Context "8. Auditoría de Touchless (Ausencia de Inicios de Sesión Interactivos en OOBE)" {
+
+        It "No deben existir logons interactivos (LogonType 2) durante la ventana de aprovisionamiento" {
+            $OsInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
+
+            if ($null -eq $OsInfo) {
+                Set-ItResult -Skipped -Because "No se pudo resolver Win32_OperatingSystem para acotar la ventana de arranque."
+                return
+            }
+
+            $BootTime = $OsInfo.LastBootUpTime
+
+            $SecurityEvents = Get-WinEvent -FilterHashtable @{
+                LogName   = 'Security'
+                Id        = 4624
+                StartTime = $BootTime
+            } -ErrorAction SilentlyContinue
+
+            if ($null -eq $SecurityEvents) {
+                Set-ItResult -Skipped -Because "No se pudieron leer eventos 4624 del log Security (verificar privilegios del proceso o politica de auditoria de Logon)."
+                return
+            }
+
+            $InteractiveLogons = $SecurityEvents | Where-Object {
+                $xml = [xml]$_.ToXml()
+                $LogonType = ($xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' }).'#text'
+                $LogonType -eq '2'
+            }
+
+            $InteractiveLogons | Should -BeNullOrEmpty -Because "un logon interactivo (Tipo 2) durante la ventana de despliegue indica intervencion manual en el teclado, violando la politica Zero-Touch/Touchless de la Seccion 6."
+        }
+    }
 }
