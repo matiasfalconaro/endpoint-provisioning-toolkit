@@ -363,6 +363,20 @@ try {
         Result            = if ($Test12Pass) { "PASS" } else { "FAIL" }
     }
 
+    # Test 13: Confirm-DriverSignature - deteccion de driver no firmado (aislamiento)
+    Write-Host "`n=== Ejecutando: Test 13 - Firma de drivers no verificada ===" -ForegroundColor Cyan
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:ALLOW_HAZARDOUS_TESTS='true'; & '$ScenariosPath\test13-driversignature-unsigned.ps1'" | Out-Null
+    $Test13ExitCode = $LASTEXITCODE
+    $Test13Pass = ($Test13ExitCode -eq 0)
+    Write-Host "Exit code: $Test13ExitCode (se espera 0 - confirma que el script aborta ante driver no firmado)" -ForegroundColor $(if ($Test13Pass) {"Green"} else {"Red"})
+    $script:Results += [PSCustomObject]@{
+        Test              = "Test 13 - Firma de drivers no verificada"
+        ExpectedExitCode  = 0
+        ActualExitCode    = $Test13ExitCode
+        LogPatternMatched = "N/A"
+        Result            = if ($Test13Pass) { "PASS" } else { "FAIL" }
+    }
+
 } finally {
     # Restauracion garantizada del manifiesto real
     if (Test-Path $ManifestBackupPath) {
