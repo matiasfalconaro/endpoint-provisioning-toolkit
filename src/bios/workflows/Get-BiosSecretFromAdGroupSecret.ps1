@@ -52,8 +52,8 @@ function Get-BiosSecretFromAdGroupSecret {
 }
 
 if (-not $SkipExecution) {
-    if (-not $VaultName -or -not $SecretName) {
-        throw "Los parámetros -VaultName y -SecretName son obligatorios cuando se ejecuta el script directamente."
+    if (-not $ComputerObjectDN) {
+        throw "El parámetro -ComputerObjectDN es obligatorio cuando se ejecuta el script directamente."
     }
-    Get-BiosSecretFromKeyVault -VaultName $VaultName -SecretName $SecretName
+    Get-BiosSecretFromAdGroupSecret -ComputerObjectDN $ComputerObjectDN
 }
