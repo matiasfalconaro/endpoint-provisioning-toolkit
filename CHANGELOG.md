@@ -5,6 +5,18 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 [Version] - Fecha - [Rama] - [Estado]
 
+## [1.5.0] - 2026-07-28 - [main] - [Unreleased]
+
+### Added
+- Recuperacion el secreto de Supervisor de BIOS desde el atributo gestionado de AD DS, aplicable post-Join de dominio.
+- Recuperacion el secreto de Supervisor de BIOS desde Azure Key Vault vía Managed Identity, sin persistencia local.
+- Cobertura unitaria aislada (Pester + Mock) para ambos workflows de recuperación de secreto de BIOS.
+
+### Fixed
+- Corrección de bloqueo interactivo al hacer dot-source de los workflows de recuperación de secreto con `-SkipExecution`, requerido para pruebas unitarias aisladas.
+- Supresión justificada de `PSAvoidUsingConvertToSecureStringWithPlainText`, dado que el valor llega como texto plano desde el atributo AD sin alternativa.
+- Normalización a UTF-8 con BOM de ambos workflows para compatibilidad con PowerShell 5.1.
+
 ## [1.4.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
