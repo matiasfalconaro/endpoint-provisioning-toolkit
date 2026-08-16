@@ -13,13 +13,19 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Cobertura unitaria aislada (Pester + Mock) para ambos workflows de recuperación de secreto de BIOS.
 - Registro asistido del Hardware Hash (4K HH) en Intune/Entra ID para el flujo paralelo Autopilot, de uso exclusivo N3/Compras.
 - Cobertura unitaria aislada (Pester + Mock) para el workflow de registro de Hardware Hash.
+- Escenario de regresión para validar la propagación de código de salida ante fallos no capturados en la aplicación de parches críticos "Zero-Day".
+- Cobertura unitaria aislada (Pester + Mock) para el gate de parches críticos y para el cálculo de la métrica agregada de cumplimiento Touchless.
 
 ### Fixed
 - Corrección de bloqueo interactivo al hacer dot-source de los workflows de recuperación de secreto con `-SkipExecution`, requerido para pruebas unitarias aisladas.
 - Supresión justificada de `PSAvoidUsingConvertToSecureStringWithPlainText`, dado que el valor llega como texto plano desde el atributo AD sin alternativa.
-- Normalización a UTF-8 con BOM de ambos workflows para compatibilidad con PowerShell 5.1.
+- Normalización a UTF-8 con BOM
 - Corrección del mismo bloqueo interactivo en el workflow de registro de Hardware Hash al hacer dot-source con `-SkipExecution`.
-- Normalización a UTF-8 con BOM del workflow de registro de Hardware Hash y su cobertura unitaria.
+- Corrección del mismo bloqueo interactivo en el gate de parches críticos al hacer dot-source con `-SkipExecution`.
+- Corrección del cálculo de la métrica de cumplimiento Touchless, que siempre devolvía 100% al procesar un único reporte por un conteo incorrecto de elementos.
+- Corrección del conteo de eventos detectados en la auditoría de interacción OOBE por el mismo problema de conteo sobre un único resultado.
+
+---
 
 ## [1.4.0] - 2026-07-28 - [main] - [Unreleased]
 
