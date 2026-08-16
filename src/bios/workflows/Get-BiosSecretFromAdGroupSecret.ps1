@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Recupera el secreto de Supervisor de BIOS desde el atributo gestionado de AD DS
     (Anexo B, Opción C.2). Aplica únicamente post-Join de dominio (Fase 2 en adelante).
@@ -20,6 +20,9 @@ param(
 function Get-BiosSecretFromAdGroupSecret {
     [CmdletBinding()]
     [OutputType([System.Security.SecureString])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSAvoidUsingConvertToSecureStringWithPlainText', '',
+        Justification = 'El valor se recibe como texto plano desde el atributo AD msDS-BiosSupervisorSecret; no existe alternativa sin cambiar el modelo de almacenamiento en el esquema. Transporte cifrado vía LDAPS y reposo cifrado vía BitLocker en los DC.')]
     param(
         [Parameter(Mandatory = $true)]
         [string]$ComputerObjectDN

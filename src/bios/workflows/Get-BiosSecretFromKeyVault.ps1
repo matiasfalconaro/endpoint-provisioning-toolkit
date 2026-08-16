@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Recupera el secreto de Supervisor de BIOS desde Azure Key Vault vía Managed Identity,
     sin persistencia local (Anexo B, Opción C.1).
