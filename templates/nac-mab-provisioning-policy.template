@@ -1,0 +1,12 @@
+﻿# Plantilla declarativa de política MAB (MAC Authentication Bypass)
+# para el segmento de aprovisionamiento. Adaptar a Cisco ISE / Aruba ClearPass.
+#
+# Referencia: Sección 6.1b del Runbook RB-IT-W10-1.2.2
+
+POLICY_NAME       = MAB-PROVISIONING-LENOVO
+MATCH_OUI         = {{ LENOVO_OUI_LIST }}          # ej. 00:23:C0, AC:16:2D, ...
+MATCH_CMDB_LOOKUP = true                            # Verificación contra MDTDB/CMDB
+RESULT_VLAN       = VLAN-PROV
+SESSION_TIMEOUT   = 3600                            # 60 min, reautenticación forzada
+FALLBACK          = DENY                            # Si no está en CMDB, no se asigna VLAN-PROV
+NEXT_STEP         = EAP-TLS-POST-JOIN                # Transición tras Join de dominio (Sección 12)
