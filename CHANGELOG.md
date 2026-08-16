@@ -18,6 +18,11 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Plantillas declarativas de ACL de frontera inter-VLAN y de política MAB para el segmento de aprovisionamiento, con validación estructural de placeholders y reglas mínimas obligatorias.
 - Runbook de failover HA/DR para la infraestructura de despliegue (NAS-CORP01/WDS-MDT), con procedimiento de conmutación y protocolo de prueba trimestral.
 - Matriz de equivalencia entre directivas GPO On-Premise e Intune Configuration Profiles para el flujo paralelo Autopilot.
+- Dependencias opcionales `Az.KeyVault` y `Get-WindowsAutoPilotInfo` en el manifiesto de PSDepend, requeridas únicamente para la ejecución real (no mockeada) de los workflows de BIOS vía Key Vault y de registro de Hardware Hash.
+
+### Changed
+- `Run-AllTests.ps1` admite normalizar encoding y ejecutar unit tests sobre archivos o rutas puntuales (`-EncodingTargetPath`, `-UnitTestPath`), en lugar de operar siempre sobre todo `src/`/`test-drivers/`.
+- `Run-AllTests.ps1` permite omitir la batería de escenarios de integración (`-SkipScenarios`) y finalizar la ejecución inmediatamente después de normalizar encoding (`-EncodingOnly`), para acelerar el ciclo de desarrollo local.
 
 ### Fixed
 - Corrección de bloqueo interactivo al hacer dot-source de los workflows de recuperación de secreto con `-SkipExecution`, requerido para pruebas unitarias aisladas.
