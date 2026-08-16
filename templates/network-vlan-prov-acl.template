@@ -1,0 +1,15 @@
+﻿# Plantilla declarativa de ACL de frontera inter-VLAN (VLAN-PROV)
+# Formato agnóstico — adaptar sintaxis según fabricante (Cisco IOS / Aruba AOS-CX)
+#
+# Referencia: Sección 6.1a del Runbook RB-IT-W10-1.2.2
+
+ACL_NAME        = ACL-VLAN-PROV-INBOUND
+SOURCE_VLAN     = VLAN-PROV
+DEST_HOST       = {{ DEPLOY_VIP_OR_NAS_IP }}
+
+PERMIT  udp   src=any        dst=${DEST_HOST}  port=67,68     # DHCP/PXE
+PERMIT  udp   src=any        dst=${DEST_HOST}  port=69        # TFTP
+PERMIT  tcp   src=any        dst=${DEST_HOST}  port=445       # SMB (Deployment Share)
+PERMIT  tcp   src=any        dst=${DEST_HOST}  port=4011      # WDS
+DENY    ip    src=VLAN-PROV  dst=VLAN-PRODUCCION              # Bloqueo explícito
+DENY    ip    src=any        dst=any            log=true      # Regla implícita, con log

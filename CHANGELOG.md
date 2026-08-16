@@ -15,6 +15,7 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Cobertura unitaria aislada (Pester + Mock) para el workflow de registro de Hardware Hash.
 - Escenario de regresión para validar la propagación de código de salida ante fallos no capturados en la aplicación de parches críticos "Zero-Day".
 - Cobertura unitaria aislada (Pester + Mock) para el gate de parches críticos y para el cálculo de la métrica agregada de cumplimiento Touchless.
+- Plantillas declarativas de ACL de frontera inter-VLAN y de política MAB para el segmento de aprovisionamiento, con validación estructural de placeholders y reglas mínimas obligatorias.
 
 ### Fixed
 - Corrección de bloqueo interactivo al hacer dot-source de los workflows de recuperación de secreto con `-SkipExecution`, requerido para pruebas unitarias aisladas.
