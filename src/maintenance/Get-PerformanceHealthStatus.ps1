@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audita el rendimiento y la salud térmica del sistema (CPU, Temperatura y Throughput de Disco NVMe/SATA).
 .DESCRIPTION

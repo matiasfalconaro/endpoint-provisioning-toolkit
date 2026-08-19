@@ -1,13 +1,15 @@
 ﻿<#
 .SYNOPSIS
-    Lógica aislada del Contexto 9 (auditoría de interacción OOBE) para
-    Test-DeploymentCompliance.Tests.ps1. Ref. Sección 16.2.
+    Audita evidencia de interacción manual durante el flujo OOBE (Contexto 9).
 .DESCRIPTION
-    Correlaciona eventos del proveedor Microsoft-Windows-Shell-Core y EventID 7001
-    contra la ventana de aprovisionamiento (LastBootUpTime → fin de Task Sequence).
-    Degrada a estado 'Skipped' si el proveedor de eventos no está disponible,
-    siguiendo el mismo patrón que el Contexto 8 (Test-TouchlessAudit.Tests.ps1).
+    Inspecciona el registro de eventos System en busca de EventID 7001 y eventos
+    del proveedor Microsoft-Windows-Shell-Core, correlacionando su timestamp contra
+    la ventana de aprovisionamiento (LastBootUpTime hasta fin de Task Sequence).
+    Degrada a Skipped si el proveedor de eventos no está disponible.
+.PARAMETER DeploymentWindowStart
+    Timestamp de inicio de la ventana de aprovisionamiento a auditar.
 #>
+
 function Invoke-OobeInteractionAudit {
     [CmdletBinding()]
     param(

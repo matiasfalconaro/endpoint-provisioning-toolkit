@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Aplica de forma desatendida un parche crítico "Zero-Day" (Critical Ring) como paso
     final post-OS / pre-entrega dentro de la Task Sequence.

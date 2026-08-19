@@ -1,14 +1,12 @@
 ﻿<#
 .SYNOPSIS
-    Depuración Server-Side de paquetes AppX provisionados (Image Servicing Offline).
+    Elimina paquetes UWP/AppX no corporativos de la imagen de Windows en modo offline.
 .DESCRIPTION
-    Remueve paquetes no corporativos directamente de la imagen de Windows montada/aplicada
-    durante la fase WinPE de la Task Sequence.
+    Ejecuta la depuración de bloatware mediante Remove-AppxProvisionedPackage
+    sobre el volumen del sistema operativo durante la fase de WinPE, antes
+    del primer arranque (Server-Side Image Servicing, Sección 11.1).
 .PARAMETER TargetDrive
-    Unidad o ruta del volumen del sistema operativo offline o imagen montada.
-    Nota: -Path en Remove-AppxProvisionedPackage opera sobre el volumen offline
-    accedido desde WinPE. Para imágenes WIM montadas con DISM /Mount-Image,
-    pasar la ruta de montaje en vez de la letra de unidad.
+    Unidad montada del sistema operativo offline sobre la que se aplica la depuración.
 #>
 
 function Invoke-AppxBloatwareRemoval {
