@@ -41,15 +41,20 @@ jobs:
               Write-Warning "La ruta '$TargetPath' no existe. Verifique la estructura del repositorio."
           }
 
-  generate-manifest:
-    name: Generate SHA-256 Integrity Manifest
-    runs-on: ubuntu-latest
+  generate-derived-docs:
+    name: Generate Script Catalog & Integrity Manifest
+    needs: lint
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Generate script catalog
+        shell: pwsh
+        run: ./tools/Generate-ScriptCatalog.ps1
 
       - name: Generate manifest.json
         shell: pwsh
@@ -59,14 +64,16 @@ jobs:
             -SourcePath "$PWD" `
             -ManifestPath "$PWD/manifest.json"
 
-      - name: Commit manifest if changed
+      - name: Commit derived docs if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f manifest.json
-          if ! git diff --cached --quiet -- manifest.json; then
-            git commit -m "chore(ci): actualizar manifest.json [skip ci]"
+          git add docs/reference/script-catalog.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(ci): actualizar manifest.json y script-catalog.md [skip ci]"
             git push
           else
-            echo "manifest.json sin cambios, nada que commitear."
+            echo "Sin cambios en artefactos derivados."
           fi
+          
