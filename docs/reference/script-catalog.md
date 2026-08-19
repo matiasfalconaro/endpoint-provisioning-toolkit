@@ -1,4 +1,4 @@
-﻿# Anexo D - Catalogo de Scripts (generado automaticamente)
+Catalogo de Scripts
 
 > No editar manualmente. Generado por tools/Generate-ScriptCatalog.ps1 desde comment-based help.
 
