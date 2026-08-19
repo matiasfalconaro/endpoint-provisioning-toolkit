@@ -5,6 +5,21 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 [Version] - Fecha - [Rama] - [Estado]
 
+## [1.6.0] - 2026-07-28 - [main] - [Unreleased]
+
+### Added
+- Generador programático del catálogo de scripts mediante parseo estático de AST, sin ejecutar los scripts fuente.
+- Catálogo de scripts derivado automáticamente desde comment-based help.
+- Comment-based help en `Remove-AppxBloatware.ps1` y `Test-OobeInteractionAudit.ps1`.
+- Se unifica la generación de `script-catalog.md` y `manifest.json` en un único job secuencial post-merge a `main`.
+
+### Changed
+- Normalización del `.SYNOPSIS` a una sola línea (colapso de saltos de línea y espacios) al generar la tabla del catálogo, para preservar el formato de tabla Markdown.
+
+### Fixed
+- Normalización a UTF-8 con BOM en `Get-PerformanceHealthStatus.ps1` e `Invoke-CriticalPatchGate.ps1`, cuyo comment-based help estaba corrupto por codificación incorrecta.
+
+
 ## [1.5.0] - 2026-07-28 - [main] - [Unreleased]
 
 ### Added
